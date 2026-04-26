@@ -2,13 +2,15 @@
 Google Calendar and Sheets service integration.
 Handles tasks (with stages) and calendar events.
 """
-import os
+import os, json
 from datetime import datetime, timezone
 from typing import Optional
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar",
@@ -33,10 +35,31 @@ CHAT_HEADERS    = ["#", "Timestamp", "Phone", "Direction", "Message", "Type"]
 # Auth helpers
 # ---------------------------------------------------------------------------
 def _get_credentials():
-    service_account_file = os.environ.get("GOOGLE_SERVICE_ACCOUNT_FILE", "service_account.json")
-    return service_account.Credentials.from_service_account_file(
-        service_account_file, scopes=SCOPES
-    )
+    # Option 1: Full JSON in env variable (for Render deployment)
+    json_str = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    if json_str:
+        info = json.loads(json_str)
+        return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+
+    # Option 2: File path — try absolute, then relative to this script's directory
+    file_name = os.environ.get("GOOGLE_SERVICE_ACCOUNT_FILE", "service_account.json")
+    if os.path.isabs(file_name) and os.path.exists(file_name):
+        path = file_name
+    else:
+        # Try relative to script directory first
+        candidate = os.path.join(_BASE_DIR, file_name)
+        if os.path.exists(candidate):
+            path = candidate
+        elif os.path.exists(file_name):
+            path = file_name
+        else:
+            raise FileNotFoundError(
+                f"service_account.json not found. Looked in:\n"
+                f"  - {candidate}\n"
+                f"  - {os.path.abspath(file_name)}\n"
+                f"Place the file at: {_BASE_DIR}"
+            )
+    return service_account.Credentials.from_service_account_file(path, scopes=SCOPES)
 
 def _calendar_service():
     return build("calendar", "v3", credentials=_get_credentials())

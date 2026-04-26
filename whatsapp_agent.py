@@ -382,18 +382,88 @@ Priorities: 🔴 High · 🟡 Medium · 🟢 Low
 # ---------------------------------------------------------------------------
 # Claude agent loop
 # ---------------------------------------------------------------------------
+def _block_type(b):
+    """Get block type whether it's a dict or anthropic object."""
+    if isinstance(b, dict): return b.get("type")
+    return getattr(b, "type", None)
+
+def sanitize_history(history: list) -> list:
+    """Drop any assistant message with tool_use that doesn't have a matching tool_result next.
+    Also drop user messages with tool_result whose tool_use was already dropped."""
+    cleaned = []
+    i = 0
+    while i < len(history):
+        msg = history[i]
+        role = msg.get("role")
+        content = msg.get("content", [])
+        if not isinstance(content, list): content = []
+
+        if role == "assistant":
+            has_tool_use = any(_block_type(b) == "tool_use" for b in content)
+            if has_tool_use:
+                # Need NEXT message to be a user with tool_result
+                nxt = history[i+1] if i+1 < len(history) else None
+                if nxt and nxt.get("role") == "user":
+                    nxt_content = nxt.get("content", [])
+                    if isinstance(nxt_content, list) and any(_block_type(b) == "tool_result" for b in nxt_content):
+                        cleaned.append(msg)
+                        cleaned.append(nxt)
+                        i += 2
+                        continue
+                # Orphaned tool_use — skip this assistant message
+                print(f"⚠️  Dropping orphaned tool_use at index {i}")
+                i += 1
+                continue
+        elif role == "user":
+            # Drop user messages that are PURELY tool_results (orphaned)
+            if content and all(_block_type(b) == "tool_result" for b in content):
+                print(f"⚠️  Dropping orphaned tool_result at index {i}")
+                i += 1
+                continue
+        cleaned.append(msg)
+        i += 1
+    return cleaned
+
+def safe_trim(history: list, max_msgs: int = 20) -> list:
+    """Trim history but never split a tool_use/tool_result pair."""
+    if len(history) <= max_msgs: return history
+    trimmed = history[-max_msgs:]
+    # If the first kept message is a user with tool_result, drop it (no preceding tool_use)
+    while trimmed and trimmed[0].get("role") == "user":
+        c = trimmed[0].get("content", [])
+        if isinstance(c, list) and c and all(_block_type(b) == "tool_result" for b in c):
+            trimmed = trimmed[1:]
+        else:
+            break
+    return trimmed
+
 def ask_claude(phone: str, content: list) -> str:
     history = load_history(phone)
+    history = sanitize_history(history)
     history.append({"role": "user", "content": content})
 
     while True:
-        response = claude.messages.create(
-            model="claude-opus-4-5",
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            tools=TOOLS,
-            messages=history[-20:],
-        )
+        try:
+            response = claude.messages.create(
+                model="claude-opus-4-5",
+                max_tokens=1024,
+                system=SYSTEM_PROMPT,
+                tools=TOOLS,
+                messages=safe_trim(history, 20),
+            )
+        except anthropic.BadRequestError as e:
+            # Conversation corruption — reset and try once more with just the new message
+            print(f"⚠️  Claude API error, resetting history: {e}")
+            history = [{"role": "user", "content": content}]
+            _mem_cache[phone] = []
+            if SUPABASE_OK: sb.save_conversation(phone, [])
+            response = claude.messages.create(
+                model="claude-opus-4-5",
+                max_tokens=1024,
+                system=SYSTEM_PROMPT,
+                tools=TOOLS,
+                messages=history,
+            )
         text, tool_calls = "", []
         for block in response.content:
             if block.type == "text":       text += block.text
@@ -560,7 +630,20 @@ def api_contacts():
 @app.route("/api/chats/<phone>", methods=["DELETE"])
 def api_delete_chat(phone):
     if not SUPABASE_OK: return jsonify({"success":False,"error":"Supabase required"}),503
+    # Also reset conversation memory
+    _mem_cache.pop(phone, None)
+    try: sb.save_conversation(phone, [])
+    except: pass
     return jsonify(sb.delete_chat(phone))
+
+@app.route("/api/memory/<phone>/reset", methods=["POST"])
+def api_reset_memory(phone):
+    """Clear Claude's conversation memory (but keep chat log)."""
+    _mem_cache.pop(phone, None)
+    if SUPABASE_OK:
+        try: sb.save_conversation(phone, [])
+        except Exception as e: return jsonify({"success":False,"error":str(e)}),500
+    return jsonify({"success": True, "message": f"Memory cleared for {phone}"})
 
 @app.route("/api/events")
 def api_events():
