@@ -202,12 +202,13 @@ TOOLS = [
     },
     {
         "name": "get_tasks",
-        "description": "List tasks. Can filter by status or search by name.",
+        "description": "List tasks. Filter by status (To Do/In Progress/Done), period (today/week/month/overdue), or search by name. Use this for ALL task queries.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "status_filter":{"type":"string","default":""},
+                "status_filter":{"type":"string","default":"","description":"To Do | In Progress | Review | Done | Cancelled"},
                 "search":       {"type":"string","default":""},
+                "period":       {"type":"string","default":"","description":"today | week | month | overdue (filters by due_date)"},
             },
             "required": [],
         },
@@ -285,9 +286,30 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
                 ))
             elif name == "get_tasks":
                 if SUPABASE_OK:
-                    return json.dumps(svc.get_tasks(status_filter=inp.get("status_filter",""), search=inp.get("search","")))
+                    res = svc.get_tasks(status_filter=inp.get("status_filter",""), search=inp.get("search",""))
                 else:
-                    return json.dumps(svc.get_tasks(status_filter=inp.get("status_filter","")))
+                    res = svc.get_tasks(status_filter=inp.get("status_filter",""))
+                # Filter by period if requested
+                period = (inp.get("period","") or "").lower().strip()
+                if period and res.get("tasks"):
+                    from datetime import date, timedelta
+                    today = date.today()
+                    filtered = []
+                    for t in res["tasks"]:
+                        dd = (t.get("due_date") or "").strip()
+                        if not dd:
+                            if period == "today": continue
+                            filtered.append(t); continue
+                        try:
+                            td = datetime.strptime(dd[:10], "%Y-%m-%d").date()
+                        except: continue
+                        if period == "today" and td == today: filtered.append(t)
+                        elif period == "week" and today <= td <= today + timedelta(days=7): filtered.append(t)
+                        elif period == "month" and td.year == today.year and td.month == today.month: filtered.append(t)
+                        elif period == "overdue" and td < today and "Done" not in t.get("status",""): filtered.append(t)
+                    res["tasks"] = filtered
+                    res["period"] = period
+                return json.dumps(res)
             elif name == "update_task_status":
                 return json.dumps(svc.update_task_status(inp["task_id"], inp["new_status"]))
         except Exception as e:
@@ -320,20 +342,42 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = f"""You are a personal AI manager on WhatsApp. Today: {datetime.utcnow().strftime('%Y-%m-%d')}.
+SYSTEM_PROMPT = f"""You are *Niksol AI* — a personal business manager on WhatsApp. Today is {datetime.utcnow().strftime('%A, %d %B %Y')}.
 
-🌍 LANGUAGE: Always reply in the SAME language the user writes in. Auto-detect every message.
+🌍 LANGUAGE: Auto-detect — reply in the SAME language as the user (Urdu, English, etc).
 
-You handle:
-- 💬 Text — chat, tasks, schedule
-- 🖼️ Images — describe and analyse
-- 📄 Documents/PDFs — read and summarise
-- 🎤 Voice notes — respond to transcription
-- 🔘 Buttons — send quick action menus
+⚡ CORE BEHAVIOUR:
+1. Be ACTION-ORIENTED — don't ask, just DO. If user asks for tasks → call get_tasks → show them. If user says "add task X" → call add_task immediately.
+2. NEVER send the same button menu twice in a row. Buttons only when truly needed (first message, or to clarify ambiguity).
+3. When user asks "tasks", "what to do today/this week/this month" — call get_tasks and FILTER by date yourself. Show actual task list.
+4. When user asks "daily" → today's tasks. "Weekly" → next 7 days. "Monthly" → this month.
+5. After completing an action, give a SHORT confirmation (1-2 lines). Don't repeat menus.
 
-Task stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done → ❌ Cancelled
+📋 TASK FORMAT (when listing):
+*1. Task Name* 🔴
+   📅 Due: 2026-04-28 · 📋 To Do
+*2. Another Task* 🟡
+   📅 Due: 2026-04-30 · 🔄 In Progress
 
-Style: SHORT replies (max 6 lines), *bold*, _italic_, emojis. After actions, send a button menu."""
+Stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done → ❌ Cancelled
+Priorities: 🔴 High · 🟡 Medium · 🟢 Low
+
+📅 SCHEDULING / AVAILABILITY:
+- When someone asks about your availability or wants to book a call, check the calendar with list_calendar_events first
+- Suggest 2-3 free time slots
+- Once they confirm, create the event with create_calendar_event
+- Always confirm: title, time, date, attendees
+
+✨ STYLE:
+- SHORT replies (max 8 lines)
+- Use *bold*, _italic_, emojis sparingly but effectively
+- Be warm, professional, and helpful
+- Never say "I'll send you a menu" — just send actions/info directly
+
+🚫 DO NOT:
+- Send button menus repeatedly without context
+- Ask "what would you like to do?" if the user already told you
+- Use generic phrases — be specific to their request"""
 
 # ---------------------------------------------------------------------------
 # Claude agent loop
@@ -529,9 +573,72 @@ def api_meetings():
     return jsonify(gs.get_sheet_meetings(max_rows=50))
 
 # ---------------------------------------------------------------------------
+# Daily Reminder Scheduler — 8AM Pakistan Time (PKT = UTC+5)
+# ---------------------------------------------------------------------------
+REMINDER_PHONE = os.environ.get("REMINDER_PHONE", "")  # set this in .env to your WhatsApp number
+
+def send_daily_summary():
+    if not REMINDER_PHONE or not SUPABASE_OK:
+        return
+    try:
+        from datetime import date, timedelta
+        today = date.today()
+        all_tasks = sb.get_tasks(limit=200).get("tasks", [])
+        todays, overdue = [], []
+        for t in all_tasks:
+            if "Done" in t.get("status","") or "Cancelled" in t.get("status",""): continue
+            dd = (t.get("due_date") or "").strip()
+            if not dd: continue
+            try: td = datetime.strptime(dd[:10], "%Y-%m-%d").date()
+            except: continue
+            if td == today: todays.append(t)
+            elif td < today: overdue.append(t)
+
+        lines = [f"☀️ *Good morning!*", f"📅 {today.strftime('%A, %d %B %Y')}", ""]
+        if todays:
+            lines.append(f"🎯 *Today's Tasks ({len(todays)}):*")
+            for t in todays[:8]:
+                lines.append(f"• {t.get('task_name','')} {t.get('priority','')[:2]}")
+            lines.append("")
+        if overdue:
+            lines.append(f"⏰ *Overdue ({len(overdue)}):*")
+            for t in overdue[:5]:
+                lines.append(f"• {t.get('task_name','')} (due {t.get('due_date','')})")
+            lines.append("")
+        if not todays and not overdue:
+            lines.append("✅ No tasks for today. Enjoy! ☕")
+        else:
+            lines.append("_Reply 'tasks' to see all_")
+
+        send_text(REMINDER_PHONE, "\n".join(lines))
+        log_chat(REMINDER_PHONE, "OUT", "\n".join(lines), "text")
+        print(f"📢 Daily summary sent to {REMINDER_PHONE}")
+    except Exception as e:
+        print(f"⚠️ Daily summary error: {e}")
+
+_scheduler_started = False
+def start_scheduler():
+    global _scheduler_started
+    if _scheduler_started: return
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from pytz import timezone
+        sched = BackgroundScheduler(timezone=timezone("Asia/Karachi"))
+        sched.add_job(send_daily_summary, "cron", hour=8, minute=0)
+        sched.start()
+        _scheduler_started = True
+        print("⏰ Daily reminder scheduler running (8:00 AM PKT)")
+    except Exception as e:
+        print(f"⚠️ Scheduler not started: {e} (run: pip install apscheduler pytz)")
+
+# Start on import (for gunicorn/Render)
+start_scheduler()
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    start_scheduler()
     port = int(os.environ.get("PORT",5000))
     print("="*55)
     print("  WhatsApp AI Manager — Claude + Supabase")

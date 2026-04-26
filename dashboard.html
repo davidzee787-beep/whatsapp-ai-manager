@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>AI Manager — Dashboard</title>
+<title>Niksol AI — Personal Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#060610;--bg2:#0b0b18;--bg3:#0f0f1e;--card:#111122;--card2:#161628;
-  --border:#1a1a2e;--border2:#222240;--border3:#2a2a50;
-  --t1:#f0f0ff;--t2:#8888bb;--t3:#44446a;--t4:#222244;
+
+/* ===== Theme Variables ===== */
+:root[data-theme="dark"]{
+  --bg:#0a0a14;--bg2:#11111f;--bg3:#161628;--card:#181830;--card2:#1f1f3a;
+  --border:#22223e;--border2:#2c2c4f;--border3:#3a3a66;
+  --t1:#f5f5ff;--t2:#9494c4;--t3:#5a5a86;--t4:#2a2a48;
   --accent:#6366f1;--accent2:#818cf8;--accent3:#a5b4fc;
   --aglow:rgba(99,102,241,.25);--aglow2:rgba(99,102,241,.08);
   --green:#10b981;--green2:rgba(16,185,129,.12);
@@ -19,509 +21,649 @@
   --purple:#a78bfa;--purple2:rgba(167,139,250,.12);
   --cyan:#22d3ee;--cyan2:rgba(34,211,238,.12);
   --red:#f43f5e;--red2:rgba(244,63,94,.12);
+  --shadow:0 4px 20px rgba(0,0,0,.4);
+  --shadow2:0 12px 40px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --bg:#f5f7fb;--bg2:#ffffff;--bg3:#f8f9fc;--card:#ffffff;--card2:#f8f9fc;
+  --border:#e5e7eb;--border2:#d1d5db;--border3:#9ca3af;
+  --t1:#0f172a;--t2:#475569;--t3:#94a3b8;--t4:#cbd5e1;
+  --accent:#4f46e5;--accent2:#6366f1;--accent3:#818cf8;
+  --aglow:rgba(79,70,229,.15);--aglow2:rgba(79,70,229,.05);
+  --green:#059669;--green2:rgba(5,150,105,.12);
+  --blue:#2563eb;--blue2:rgba(37,99,235,.12);
+  --amber:#d97706;--amber2:rgba(217,119,6,.12);
+  --purple:#8b5cf6;--purple2:rgba(139,92,246,.12);
+  --cyan:#0891b2;--cyan2:rgba(8,145,178,.12);
+  --red:#dc2626;--red2:rgba(220,38,38,.12);
+  --shadow:0 2px 8px rgba(0,0,0,.06);
+  --shadow2:0 8px 30px rgba(0,0,0,.08);
+}
+:root{
   --r:14px;--rs:10px;--rx:7px;
   --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
-  --sh:0 4px 24px rgba(0,0,0,.5);--sh2:0 8px 40px rgba(0,0,0,.6);
 }
-html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
 
-/* ── Topbar ── */
+/* ===== Topbar ===== */
 .topbar{
-  height:58px;background:var(--bg2);border-bottom:1px solid var(--border);
+  height:62px;background:var(--bg2);border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:0;padding:0 24px;flex-shrink:0;
-  position:relative;z-index:50;
+  position:relative;z-index:50;box-shadow:var(--shadow);
 }
-.tbar-logo{display:flex;align-items:center;gap:12px;margin-right:32px}
+.tbar-logo{display:flex;align-items:center;gap:12px;margin-right:32px;cursor:pointer}
 .logo-gem{
-  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
   background:linear-gradient(135deg,var(--accent) 0%,var(--cyan) 100%);
-  display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:-.5px;
-  box-shadow:0 0 20px var(--aglow);
+  display:grid;place-items:center;font-weight:800;font-size:14px;color:#fff;
+  box-shadow:0 0 24px var(--aglow);
 }
-.logo-label{font-weight:700;font-size:15px;letter-spacing:-.4px;color:var(--t1)}
+.logo-label{font-weight:700;font-size:16px;letter-spacing:-.4px;color:var(--t1)}
 .logo-sub{font-size:10px;color:var(--t3);letter-spacing:.04em;margin-top:1px}
-.tbar-sep{width:1px;height:24px;background:var(--border2);margin:0 20px}
-.tbar-clock{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--t2);letter-spacing:.04em}
-.tbar-date{font-size:11px;color:var(--t3);margin-top:1px}
+
+.tbar-search{
+  flex:1;max-width:520px;margin:0 auto;position:relative;
+}
+.tbar-search input{
+  width:100%;height:38px;border-radius:10px;border:1px solid var(--border);
+  background:var(--card);color:var(--t1);padding:0 16px 0 40px;font-size:13px;
+  font-family:var(--font);outline:none;transition:.2s;
+}
+.tbar-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--aglow2)}
+.tbar-search svg{position:absolute;left:14px;top:11px;color:var(--t3)}
+.tbar-search kbd{
+  position:absolute;right:10px;top:9px;padding:3px 7px;font-size:10px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--t3);
+  font-family:var(--mono);
+}
+
 .tbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.status-chip{
-  display:flex;align-items:center;gap:7px;padding:5px 14px;
-  border-radius:99px;border:1px solid rgba(16,185,129,.2);
-  background:rgba(16,185,129,.06);font-size:12px;color:var(--green);
+.icon-btn{
+  width:38px;height:38px;border-radius:10px;border:1px solid var(--border);
+  background:var(--card);color:var(--t2);cursor:pointer;display:grid;place-items:center;
+  transition:.18s;position:relative;
 }
-.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}
-.tbar-btn{
-  height:34px;padding:0 14px;border-radius:var(--rx);border:1px solid var(--border2);
-  background:var(--card);color:var(--t2);font-size:12px;font-weight:500;
-  cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;
-  transition:.18s;
+.icon-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--aglow2)}
+.icon-btn .badge{
+  position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
+  min-width:16px;height:16px;border-radius:99px;font-size:9px;font-weight:700;
+  display:grid;place-items:center;padding:0 4px;
 }
-.tbar-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--aglow2)}
-.tbar-btn svg{opacity:.7}
+.profile-chip{
+  display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:10px;
+  border:1px solid var(--border);background:var(--card);cursor:pointer;transition:.18s;
+}
+.profile-chip:hover{border-color:var(--accent)}
+.profile-av{
+  width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--purple));
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;
+}
+.profile-info{display:flex;flex-direction:column;line-height:1.2}
+.profile-name{font-size:12px;font-weight:600;color:var(--t1)}
+.profile-role{font-size:10px;color:var(--t3)}
 
-/* ── Layout ── */
-.app{display:flex;height:calc(100vh - 58px);overflow:hidden}
+/* ===== Profile Dropdown ===== */
+.profile-pop{
+  position:absolute;top:60px;right:24px;width:280px;
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  box-shadow:var(--shadow2);padding:14px;display:none;z-index:100;
+}
+.profile-pop.show{display:block;animation:slideDown .2s}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.pop-head{display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pop-av{
+  width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--purple));
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:18px;cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.pop-av input[type=file]{display:none}
+.pop-av .cam{
+  position:absolute;bottom:0;right:0;background:var(--accent);width:18px;height:18px;
+  border-radius:99px;display:grid;place-items:center;color:#fff;font-size:9px;
+}
+.pop-edit input{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;font-size:13px;color:var(--t1);font-family:var(--font);outline:none;margin-bottom:6px;
+}
+.pop-edit input:focus{border-color:var(--accent)}
+.pop-list{padding:8px 0}
+.pop-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;
+  cursor:pointer;color:var(--t2);font-size:13px;transition:.15s;
+}
+.pop-item:hover{background:var(--bg3);color:var(--t1)}
+.pop-item svg{opacity:.7}
 
-/* ── Sidebar ── */
+/* ===== Layout ===== */
+.app{display:flex;height:calc(100vh - 62px);overflow:hidden}
+
+/* ===== Sidebar ===== */
 .sidebar{
-  width:230px;background:var(--bg2);border-right:1px solid var(--border);
+  width:236px;background:var(--bg2);border-right:1px solid var(--border);
   display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
 }
-.sidebar-inner{flex:1;overflow-y:auto;padding:12px 10px}
+.sidebar-inner{flex:1;overflow-y:auto;padding:14px 12px}
 .nav-group-label{
   font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--t3);padding:8px 10px 4px;margin-top:4px;
+  color:var(--t3);padding:10px 12px 6px;margin-top:6px;
 }
 .nav-item{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--rs);
+  display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:10px;
   margin:1px 0;cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;
   transition:.15s;border:1px solid transparent;position:relative;
 }
 .nav-item:hover{background:var(--card);color:var(--t1)}
 .nav-item.active{
-  background:var(--aglow2);color:var(--accent2);
-  border-color:rgba(99,102,241,.18);
+  background:var(--aglow2);color:var(--accent2);border-color:var(--aglow);
 }
 .nav-item.active::before{
-  content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);
-  width:3px;height:18px;border-radius:0 3px 3px 0;background:var(--accent);
+  content:'';position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;border-radius:0 3px 3px 0;background:var(--accent);
 }
-.nav-item svg{flex-shrink:0;width:16px;height:16px;opacity:.65}
+.nav-item svg{flex-shrink:0;width:17px;height:17px;opacity:.65}
 .nav-item.active svg,.nav-item:hover svg{opacity:1}
 .nav-badge{
-  margin-left:auto;min-width:20px;height:20px;padding:0 6px;
+  margin-left:auto;min-width:22px;height:20px;padding:0 7px;
   background:var(--accent);color:#fff;font-size:10px;font-weight:700;
   border-radius:99px;display:grid;place-items:center;
 }
-.sidebar-footer{
-  padding:14px;border-top:1px solid var(--border);flex-shrink:0;
+
+.sidebar-footer{padding:14px;border-top:1px solid var(--border);flex-shrink:0}
+.progress-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;
 }
-.sidebar-footer-info{font-size:11px;color:var(--t3);text-align:center;line-height:1.6}
+.progress-ring{position:relative;width:80px;height:80px;margin:0 auto 8px}
+.progress-ring svg{transform:rotate(-90deg)}
+.progress-ring circle{fill:none;stroke-width:6}
+.progress-ring .ring-bg{stroke:var(--border)}
+.progress-ring .ring-fg{stroke:var(--accent);stroke-linecap:round;transition:.8s}
+.progress-ring .pct{
+  position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-weight:700;color:var(--t1);
+}
+.progress-card-label{font-size:11px;color:var(--t3);margin-bottom:4px}
+.progress-card-sub{font-size:11px;color:var(--t2);margin-top:8px}
 
-/* ── Content ── */
-.content{flex:1;overflow-y:auto;background:var(--bg)}
-.page{display:none;flex-direction:column;gap:22px;padding:26px;min-height:100%}
-.page.active{display:flex}
+/* ===== Main ===== */
+.main{flex:1;overflow-y:auto;background:var(--bg);padding:24px 28px}
+.section{display:none}
+.section.active{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── Page header ── */
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.page-title{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--t1)}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.page-title{font-size:24px;font-weight:700;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+.page-title .wave{display:inline-block;animation:wave 1.5s ease-in-out 1}
+@keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(15deg)}75%{transform:rotate(-10deg)}}
 .page-sub{font-size:13px;color:var(--t3);margin-top:3px}
-.page-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.page-actions{display:flex;align-items:center;gap:10px}
 
-/* ── Stats ── */
-.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-.stat-card{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
-  padding:18px 20px;display:flex;align-items:center;gap:14px;
-  transition:.2s;cursor:default;
+.btn{
+  height:38px;padding:0 16px;border-radius:10px;border:1px solid var(--border);
+  background:var(--card);color:var(--t1);font-family:var(--font);font-size:13px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;gap:7px;transition:.18s;
 }
-.stat-card:hover{border-color:var(--border3);transform:translateY(-2px);box-shadow:var(--sh)}
+.btn:hover{border-color:var(--accent);background:var(--aglow2)}
+.btn-pri{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;border-color:transparent;box-shadow:0 4px 14px var(--aglow);
+}
+.btn-pri:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--aglow);background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.btn-ghost{background:transparent}
+
+/* ===== Stat Cards ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.stat{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;
+  position:relative;overflow:hidden;transition:.2s;
+}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
 .stat-icon{
-  width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;
+  width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+  background:var(--aglow2);color:var(--accent);
 }
-.si-accent{background:var(--aglow2);color:var(--accent2)}
-.si-green {background:var(--green2);color:var(--green)}
-.si-amber {background:var(--amber2);color:var(--amber)}
-.si-blue  {background:var(--blue2); color:var(--blue)}
-.si-purple{background:var(--purple2);color:var(--purple)}
-.si-cyan  {background:var(--cyan2); color:var(--cyan)}
-.stat-val{font-size:26px;font-weight:800;line-height:1;letter-spacing:-.5px}
-.stat-lbl{font-size:11px;color:var(--t3);margin-top:4px;font-weight:500}
+.stat-trend{font-size:11px;font-weight:600;display:flex;align-items:center;gap:3px}
+.stat-trend.up{color:var(--green)}
+.stat-trend.down{color:var(--red)}
+.stat-num{font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--t1)}
+.stat-label{font-size:12px;color:var(--t3);margin-top:3px}
 
-/* ── Panel ── */
-.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.panel-head{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:15px 20px;border-bottom:1px solid var(--border);
-}
-.panel-title{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--t1)}
-.panel-title svg{color:var(--accent);opacity:.8;flex-shrink:0}
-.panel-title-sub{font-size:11px;color:var(--t3);font-weight:400;margin-left:4px}
-.panel-badge{
-  background:var(--bg3);border:1px solid var(--border2);border-radius:99px;
-  padding:3px 12px;font-size:11px;color:var(--t2);font-weight:600;
-}
-.panel-body{padding:18px 20px}
-.panel-body.no-pad{padding:0}
+/* color variants */
+.stat.s-blue .stat-icon{background:var(--blue2);color:var(--blue)}
+.stat.s-green .stat-icon{background:var(--green2);color:var(--green)}
+.stat.s-amber .stat-icon{background:var(--amber2);color:var(--amber)}
+.stat.s-red .stat-icon{background:var(--red2);color:var(--red)}
+.stat.s-purple .stat-icon{background:var(--purple2);color:var(--purple)}
+.stat.s-cyan .stat-icon{background:var(--cyan2);color:var(--cyan)}
 
-/* ── Search bar ── */
-.search-bar{
-  display:flex;align-items:center;gap:8px;
-  background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);
-  padding:0 14px;height:38px;transition:.18s;
+/* ===== Period Task Cards (Daily/Weekly/Monthly) ===== */
+.period-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:22px}
+.period-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;
+  display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;
 }
-.search-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--aglow)}
-.search-bar svg{color:var(--t3);flex-shrink:0}
-.search-bar input{
-  flex:1;background:none;border:none;outline:none;color:var(--t1);
-  font-size:13px;font-family:var(--font);
+.period-icon{
+  width:54px;height:54px;border-radius:13px;display:grid;place-items:center;font-size:24px;
+  background:var(--aglow2);
 }
-.search-bar input::placeholder{color:var(--t3)}
+.period-card.p-daily .period-icon{background:var(--amber2);color:var(--amber)}
+.period-card.p-weekly .period-icon{background:var(--green2);color:var(--green)}
+.period-card.p-monthly .period-icon{background:var(--purple2);color:var(--purple)}
+.period-card.p-overdue .period-icon{background:var(--red2);color:var(--red)}
+.period-info-h{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.period-info-d{font-size:12px;color:var(--t3);margin-bottom:8px}
+.period-bar{height:6px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:6px}
+.period-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.6s}
+.period-card.p-weekly .period-bar-fill{background:linear-gradient(90deg,var(--green),#34d399)}
+.period-card.p-monthly .period-bar-fill{background:linear-gradient(90deg,var(--purple),var(--accent2))}
+.period-card.p-overdue .period-bar-fill{background:linear-gradient(90deg,var(--red),#fb7185)}
+.period-num{font-size:22px;font-weight:700;color:var(--t1)}
+.period-num small{font-size:13px;color:var(--t3);font-weight:500}
+.period-pending{
+  text-align:center;padding:10px 16px;background:var(--bg3);border-radius:10px;min-width:80px;
+}
+.period-pending .pn-num{font-size:18px;font-weight:700;color:var(--t1)}
+.period-pending .pn-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
 
-/* ── Tasks ── */
-.task-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.filter-pill{
-  padding:5px 14px;border-radius:99px;border:1px solid var(--border2);
-  background:none;color:var(--t2);font-size:12px;font-weight:500;
-  cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;
-}
-.filter-pill:hover{border-color:var(--accent);color:var(--accent2)}
-.filter-pill.on{border-color:var(--accent);color:var(--accent2);background:var(--aglow2)}
+/* ===== Card / Panel ===== */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.panel-title{font-size:14px;font-weight:700;color:var(--t1)}
+.panel-body{padding:0}
 
-.task-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
-.task-row{
-  display:flex;align-items:center;gap:12px;padding:13px 16px;
-  background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);
-  transition:.18s;
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:4px;background:var(--bg3);padding:4px;border-radius:10px;width:fit-content;border:1px solid var(--border);margin-bottom:14px}
+.tab{
+  padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;color:var(--t2);
+  cursor:pointer;border:none;background:none;font-family:var(--font);transition:.15s;
 }
-.task-row:hover{border-color:var(--border2);background:var(--card2)}
-.task-id{font-size:11px;color:var(--t3);font-family:var(--mono);min-width:32px;flex-shrink:0}
-.task-check{
-  width:20px;height:20px;border-radius:6px;border:2px solid var(--border2);
-  display:grid;place-items:center;flex-shrink:0;cursor:pointer;transition:.15s;
-}
-.task-check:hover{border-color:var(--accent)}
-.task-check.checked{background:var(--green);border-color:var(--green)}
-.task-check.checked::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
-.task-body{flex:1;min-width:0}
-.task-name{font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.task-name.done{text-decoration:line-through;color:var(--t3)}
-.task-meta{font-size:11px;color:var(--t3);margin-top:3px;display:flex;align-items:center;gap:8px}
-.task-cat{color:var(--t2)}
-.pill{
-  padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;
-  white-space:nowrap;flex-shrink:0;
-}
-.pill-todo      {background:rgba(59,130,246,.12);color:var(--blue)}
-.pill-progress  {background:rgba(245,158,11,.12);color:var(--amber)}
-.pill-review    {background:rgba(167,139,250,.12);color:var(--purple)}
-.pill-done      {background:rgba(16,185,129,.12);color:var(--green)}
-.pill-cancelled {background:rgba(244,63,94,.12);color:var(--red)}
-.pill-high  {background:rgba(244,63,94,.1);color:var(--red)}
-.pill-medium{background:rgba(245,158,11,.1);color:var(--amber)}
-.pill-low   {background:rgba(16,185,129,.1);color:var(--green)}
-.task-acts{display:flex;align-items:center;gap:6px;flex-shrink:0;opacity:0;transition:.15s}
-.task-row:hover .task-acts{opacity:1}
-.icon-btn{
-  width:30px;height:30px;border-radius:var(--rx);border:1px solid var(--border2);
-  background:none;display:grid;place-items:center;cursor:pointer;transition:.15s;
-  color:var(--t2);flex-shrink:0;
-}
-.icon-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--aglow2)}
-.icon-btn.del:hover{border-color:var(--red);color:var(--red);background:var(--red2)}
+.tab.active{background:var(--card);color:var(--accent2);box-shadow:var(--shadow)}
+.tab:hover:not(.active){color:var(--t1)}
 
-/* Add task form */
-.add-form{
-  margin-top:16px;padding:18px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:var(--rs);display:flex;flex-direction:column;gap:12px;
-}
-.add-form-title{font-size:13px;font-weight:700;color:var(--t1)}
-.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ===== Inputs ===== */
 .inp{
-  padding:9px 13px;background:var(--bg2);border:1px solid var(--border2);
-  border-radius:var(--rx);color:var(--t1);font-size:13px;font-family:var(--font);
+  height:38px;padding:0 14px;border-radius:9px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--t1);font-family:var(--font);font-size:13px;
   outline:none;transition:.18s;width:100%;
 }
-.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--aglow)}
-.inp::placeholder{color:var(--t3)}
-.inp option{background:var(--bg2)}
-.form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px}
-.btn{
-  height:36px;padding:0 18px;border-radius:var(--rx);font-size:13px;
-  font-weight:600;cursor:pointer;font-family:var(--font);display:flex;
-  align-items:center;gap:7px;transition:.18s;border:none;
+.inp:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px var(--aglow2)}
+select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%238888aa' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;
 }
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:var(--accent2);box-shadow:0 0 16px var(--aglow)}
-.btn-ghost{background:none;border:1px solid var(--border2);color:var(--t2)}
-.btn-ghost:hover{border-color:var(--accent);color:var(--accent2)}
 
-/* ── Chat ── */
-.chat-shell{
-  display:grid;grid-template-columns:280px 1fr;height:640px;
-  border-radius:var(--r);border:1px solid var(--border);overflow:hidden;
+/* ===== Tasks ===== */
+.task-grid{padding:14px;display:flex;flex-direction:column;gap:8px;max-height:520px;overflow-y:auto}
+.task-row{
+  display:grid;grid-template-columns:auto 1fr auto auto auto;gap:12px;align-items:center;
+  padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);
+  transition:.15s;
 }
-.contacts-pane{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.contacts-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
-.contacts-head h3{font-size:14px;font-weight:700}
-.contacts-list{flex:1;overflow-y:auto}
-.contact-row{
-  display:flex;align-items:center;gap:10px;padding:12px 16px;
-  cursor:pointer;border-bottom:1px solid var(--border);transition:.15s;
-  position:relative;
+.task-row:hover{border-color:var(--border3);background:var(--card2)}
+.task-check{
+  width:18px;height:18px;border-radius:6px;border:2px solid var(--border3);cursor:pointer;
+  display:grid;place-items:center;transition:.18s;
 }
-.contact-row:hover{background:var(--card)}
-.contact-row.on{background:var(--aglow2);border-left:2px solid var(--accent)}
+.task-check.done{background:var(--green);border-color:var(--green)}
+.task-check.done::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.task-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.task-name{font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-name.done{text-decoration:line-through;color:var(--t3)}
+.task-meta{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.task-meta .pill{padding:2px 8px;border-radius:99px;background:var(--card);border:1px solid var(--border);font-size:10px}
+.task-priority{font-size:18px}
+.task-status-pill{
+  font-size:10px;font-weight:700;padding:4px 10px;border-radius:99px;
+  background:var(--blue2);color:var(--blue);white-space:nowrap;
+}
+.task-status-pill.s-todo{background:var(--blue2);color:var(--blue)}
+.task-status-pill.s-progress{background:var(--amber2);color:var(--amber)}
+.task-status-pill.s-review{background:var(--purple2);color:var(--purple)}
+.task-status-pill.s-done{background:var(--green2);color:var(--green)}
+.task-del{
+  width:28px;height:28px;border-radius:7px;border:1px solid transparent;
+  background:transparent;color:var(--t3);cursor:pointer;display:grid;place-items:center;transition:.15s;
+}
+.task-del:hover{background:var(--red2);color:var(--red);border-color:var(--red2)}
+
+.empty{text-align:center;padding:48px 20px;color:var(--t3);font-size:13px}
+.empty svg{margin:0 auto 12px;display:block;opacity:.4}
+
+/* ===== Add Task Form ===== */
+.add-form{padding:18px 20px;background:var(--bg3);border-bottom:1px solid var(--border);display:none}
+.add-form.show{display:block}
+.add-form-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:center}
+@media(max-width:900px){.add-form-grid{grid-template-columns:1fr}}
+
+/* ===== Chat Layout ===== */
+.chat-app{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 62px - 48px);background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg2)}
+.chat-search-wrap{padding:14px;border-bottom:1px solid var(--border)}
+.contacts{flex:1;overflow-y:auto}
+.contact{
+  display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;
+  border-bottom:1px solid var(--border);transition:.15s;position:relative;
+}
+.contact:hover{background:var(--card)}
+.contact.active{background:var(--aglow2)}
 .contact-av{
-  width:38px;height:38px;border-radius:50%;flex-shrink:0;
-  background:linear-gradient(135deg,var(--accent),var(--cyan));
-  display:grid;place-items:center;font-weight:700;font-size:13px;
+  width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--cyan));
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;
 }
 .contact-info{flex:1;min-width:0}
 .contact-phone{font-size:13px;font-weight:600;color:var(--t1)}
-.contact-last{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.contact-last{font-size:11px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .contact-del{
-  position:absolute;right:10px;top:50%;transform:translateY(-50%);
-  width:26px;height:26px;border-radius:6px;border:none;background:none;
-  color:var(--t3);cursor:pointer;display:grid;place-items:center;
-  opacity:0;transition:.15s;
+  width:26px;height:26px;border-radius:7px;border:none;background:transparent;color:var(--t3);
+  cursor:pointer;display:grid;place-items:center;opacity:0;transition:.15s;
 }
-.contact-row:hover .contact-del{opacity:1}
+.contact:hover .contact-del{opacity:1}
 .contact-del:hover{background:var(--red2);color:var(--red)}
 
-.chat-pane{display:flex;flex-direction:column;background:var(--bg3)}
-.chat-head{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between}
-.chat-head-left{display:flex;align-items:center;gap:12px}
-.chat-head-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--cyan));display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0}
-.chat-head-name{font-weight:700;font-size:14px}
-.chat-head-sub{font-size:11px;color:var(--t2);margin-top:1px}
-.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chat-main{display:flex;flex-direction:column;background:var(--bg)}
+.chat-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--card)}
+.chat-head-av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.chat-head-name{font-size:14px;font-weight:600}
+.chat-head-sub{font-size:11px;color:var(--t3)}
+.chat-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
 .bubble-wrap{display:flex;flex-direction:column;gap:3px;max-width:72%}
 .bubble-wrap.out{align-self:flex-end;align-items:flex-end}
 .bubble-wrap.in{align-self:flex-start}
-.bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5}
+.bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word}
 .in .bubble{background:var(--card2);color:var(--t1);border-radius:14px 14px 14px 3px}
 .out .bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:14px 14px 3px 14px}
-.bubble-btn{background:var(--aglow2);border:1px solid rgba(99,102,241,.25);color:var(--accent2);border-radius:99px;padding:7px 14px}
+.bubble-btn{background:var(--aglow2)!important;border:1px solid var(--aglow);color:var(--accent2)!important}
 .bubble-time{font-size:10px;color:var(--t3);padding:0 2px}
-.chat-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--t3)}
-.chat-empty-state svg{opacity:.3}
+.chat-empty-state{display:grid;place-items:center;height:100%;color:var(--t3);text-align:center;gap:10px}
 
-/* ── Events ── */
-.event-list{display:flex;flex-direction:column;gap:10px}
-.event-row{
-  display:flex;gap:16px;padding:16px 18px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:var(--rs);align-items:flex-start;transition:.18s;
+/* ===== Calendar / Events ===== */
+.event-list{display:flex;flex-direction:column;gap:10px;padding:14px}
+.event{
+  display:grid;grid-template-columns:auto 1fr;gap:14px;padding:14px;
+  border:1px solid var(--border);border-radius:12px;background:var(--bg3);transition:.15s;
 }
-.event-row:hover{border-color:var(--border2)}
-.event-date{display:flex;flex-direction:column;align-items:center;min-width:52px}
-.event-day{font-size:24px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.5px}
-.event-mon{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:1px}
-.event-stripe{width:2px;border-radius:99px;background:linear-gradient(180deg,var(--accent),var(--cyan));align-self:stretch;flex-shrink:0;margin:0 2px}
-.event-body{flex:1}
-.event-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.event-meta{font-size:12px;color:var(--t2)}
-
-/* ── Table ── */
-.tbl-wrap{overflow-x:auto}
-.tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{
-  text-align:left;padding:0 16px 10px;border-bottom:1px solid var(--border);
-  font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);
+.event:hover{border-color:var(--accent);background:var(--card2)}
+.event-date{
+  width:60px;text-align:center;border-right:1px solid var(--border);padding-right:14px;
 }
-.tbl th:first-child{padding-left:0}
-.tbl td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--t2);vertical-align:middle}
-.tbl td:first-child{padding-left:0}
-.tbl tr:last-child td{border-bottom:none}
-.tbl tr:hover td{background:rgba(255,255,255,.015)}
-.td-bold{color:var(--t1)!important;font-weight:600}
+.event-day{font-size:22px;font-weight:700;color:var(--accent2);line-height:1}
+.event-month{font-size:10px;text-transform:uppercase;color:var(--t3);letter-spacing:.05em;margin-top:4px}
+.event-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.event-title{font-size:14px;font-weight:600;color:var(--t1)}
+.event-time{font-size:11px;color:var(--t3)}
 
-/* ── Grid layouts ── */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+/* ===== Modal ===== */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  display:none;place-items:center;z-index:200;
+}
+.modal-bg.show{display:grid;animation:fade .15s}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;width:480px;max-width:92vw;padding:24px;box-shadow:var(--shadow2)}
+.modal h3{font-size:18px;margin-bottom:18px}
+.modal label{display:block;font-size:12px;color:var(--t2);margin:10px 0 5px;font-weight:500}
 
-/* ── Misc ── */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:48px;color:var(--t3);font-size:13px;text-align:center}
-.empty svg{opacity:.25;margin-bottom:4px}
-.loading{display:flex;align-items:center;gap:10px;color:var(--t3);font-size:13px;padding:24px}
-.spin{width:17px;height:17px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:rot .6s linear infinite;flex-shrink:0}
-@keyframes rot{to{transform:rotate(360deg)}}
-.divider{height:1px;background:var(--border);margin:4px 0}
+/* ===== Scrollbars ===== */
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+*::-webkit-scrollbar-thumb:hover{background:var(--border3)}
 
-/* ── Scrollbars ── */
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
-::-webkit-scrollbar-thumb:hover{background:var(--border3)}
-
-/* ── Responsive ── */
-@media(max-width:1000px){.stats-grid{grid-template-columns:repeat(3,1fr)}.g2,.g3{grid-template-columns:1fr}}
-@media(max-width:700px){.sidebar{display:none}.stats-grid{grid-template-columns:1fr 1fr}.chat-shell{grid-template-columns:1fr;height:auto}.contacts-pane{display:none}}
+/* ===== Responsive ===== */
+@media(max-width:880px){
+  .sidebar{position:absolute;left:-240px;top:62px;height:calc(100vh - 62px);transition:.25s;z-index:30}
+  .sidebar.open{left:0}
+  .tbar-search{display:none}
+  .chat-app{grid-template-columns:1fr}
+  .chat-sidebar.hide-mobile{display:none}
+}
 </style>
 </head>
 <body>
 
-<!-- ── Topbar ── -->
-<header class="topbar">
-  <div class="tbar-logo">
-    <div class="logo-gem">AI</div>
+<!-- Topbar -->
+<div class="topbar">
+  <div class="tbar-logo" onclick="goSection('overview')">
+    <div class="logo-gem">N</div>
     <div>
-      <div class="logo-label">Personal Manager</div>
-      <div class="logo-sub">Powered by Claude</div>
+      <div class="logo-label">Niksol AI</div>
+      <div class="logo-sub">PERSONAL MANAGER</div>
     </div>
   </div>
-  <div class="tbar-sep"></div>
-  <div style="display:flex;flex-direction:column">
-    <div class="tbar-clock" id="clock">--:--:--</div>
-    <div class="tbar-date" id="topDate">--</div>
-  </div>
-  <div class="tbar-right">
-    <div class="status-chip"><div class="pulse"></div><span id="connStatus">Connecting…</span></div>
-    <button class="tbar-btn" onclick="refreshAll()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-      Refresh
-    </button>
-  </div>
-</header>
 
-<!-- ── App ── -->
+  <div class="tbar-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="globalSearch" placeholder="Search tasks, contacts, events…"/>
+    <kbd>⌘K</kbd>
+  </div>
+
+  <div class="tbar-right">
+    <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+      <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
+    <button class="icon-btn" title="Notifications">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="badge" id="notifBadge" style="display:none">0</span>
+    </button>
+    <div class="profile-chip" onclick="toggleProfilePop(event)">
+      <div class="profile-av" id="navAv">D</div>
+      <div class="profile-info">
+        <div class="profile-name" id="navName">My Profile</div>
+        <div class="profile-role">Manager</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Profile dropdown -->
+<div class="profile-pop" id="profilePop" onclick="event.stopPropagation()">
+  <div class="pop-head">
+    <label class="pop-av" id="bigAv">
+      <span id="bigAvLetter">D</span>
+      <span class="cam">📷</span>
+      <input type="file" accept="image/*" onchange="setAvatar(event)"/>
+    </label>
+    <div class="pop-edit" style="flex:1">
+      <input type="text" id="profileName" placeholder="Your name" onchange="saveProfile()"/>
+      <input type="text" id="profileTitle" placeholder="Your role" onchange="saveProfile()"/>
+    </div>
+  </div>
+  <div class="pop-list">
+    <div class="pop-item" onclick="goSection('overview');hideProfilePop()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="pop-item" onclick="exportData();hideProfilePop()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export Data
+    </div>
+    <div class="pop-item" onclick="toggleTheme();hideProfilePop()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      Toggle Theme
+    </div>
+  </div>
+</div>
+
+<!-- App -->
 <div class="app">
 
-  <!-- ── Sidebar ── -->
-  <nav class="sidebar">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-inner">
-      <div class="nav-group-label">Workspace</div>
-      <div class="nav-item active" onclick="nav('overview')" id="n-overview">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-        Overview
+      <div class="nav-group-label">Main</div>
+      <div class="nav-item active" data-section="overview" onclick="goSection('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
       </div>
-      <div class="nav-item" onclick="nav('tasks')" id="n-tasks">
+      <div class="nav-item" data-section="tasks" onclick="goSection('tasks')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Tasks
-        <span class="nav-badge" id="nb-tasks">0</span>
+        <span class="nav-badge" id="taskBadge">0</span>
       </div>
-      <div class="nav-item" onclick="nav('chats')" id="n-chats">
+      <div class="nav-item" data-section="chats" onclick="goSection('chats')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Chat History
-        <span class="nav-badge" id="nb-chats">0</span>
+        Messages
+        <span class="nav-badge" id="chatBadge">0</span>
       </div>
-
-      <div class="nav-group-label" style="margin-top:8px">Schedule</div>
-      <div class="nav-item" onclick="nav('calendar')" id="n-calendar">
+      <div class="nav-item" data-section="calendar" onclick="goSection('calendar')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         Calendar
       </div>
-      <div class="nav-item" onclick="nav('meetings')" id="n-meetings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Meetings Log
+
+      <div class="nav-group-label">Workflow</div>
+      <div class="nav-item" data-section="daily" onclick="goSection('daily')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+        Daily Tasks
+      </div>
+      <div class="nav-item" data-section="weekly" onclick="goSection('weekly')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+        Weekly Plan
+      </div>
+      <div class="nav-item" data-section="monthly" onclick="goSection('monthly')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+        Monthly Goals
       </div>
     </div>
 
     <div class="sidebar-footer">
-      <div class="sidebar-footer-info" id="sidebarInfo">Loading…</div>
+      <div class="progress-card">
+        <div class="progress-card-label">Overall Progress</div>
+        <div class="progress-ring">
+          <svg width="80" height="80">
+            <circle class="ring-bg" cx="40" cy="40" r="34"/>
+            <circle class="ring-fg" cx="40" cy="40" r="34" id="ringFg" stroke-dasharray="213" stroke-dashoffset="213"/>
+          </svg>
+          <div class="pct"><span id="ringPct">0%</span></div>
+        </div>
+        <div class="progress-card-sub" id="ringSub">0 tasks remaining</div>
+      </div>
     </div>
-  </nav>
+  </aside>
 
-  <!-- ── Content ── -->
-  <main class="content">
+  <!-- Main -->
+  <main class="main">
 
-    <!-- OVERVIEW -->
-    <section class="page active" id="p-overview">
-      <div class="page-header">
+    <!-- ====== OVERVIEW ====== -->
+    <section class="section active" id="sec-overview">
+      <div class="page-head">
         <div>
-          <div class="page-title" id="greeting">Good morning</div>
-          <div class="page-sub">Here's your workspace at a glance</div>
+          <h1 class="page-title">Good <span id="greetTime">morning</span>, <span id="greetName">there</span>!<span class="wave">👋</span></h1>
+          <div class="page-sub" id="greetDate">Here's what's happening today</div>
         </div>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-icon si-accent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Total Tasks</div></div></div>
-        <div class="stat-card"><div class="stat-icon si-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="stat-val" id="st-prog">—</div><div class="stat-lbl">In Progress</div></div></div>
-        <div class="stat-card"><div class="stat-icon si-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div><div class="stat-val" id="st-done">—</div><div class="stat-lbl">Completed</div></div></div>
-        <div class="stat-card"><div class="stat-icon si-cyan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><div class="stat-val" id="st-msgs">—</div><div class="stat-lbl">Messages</div></div></div>
-        <div class="stat-card"><div class="stat-icon si-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div><div class="stat-val" id="st-contacts">—</div><div class="stat-lbl">Contacts</div></div></div>
-      </div>
-
-      <div class="g2">
-        <div class="panel">
-          <div class="panel-head"><div class="panel-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/></svg>Recent Tasks</div><button class="btn btn-ghost" style="height:30px;font-size:12px;padding:0 12px" onclick="nav('tasks')">View all →</button></div>
-          <div class="panel-body" id="ov-tasks"><div class="loading"><div class="spin"></div>Loading…</div></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><div class="panel-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Upcoming Events</div><button class="btn btn-ghost" style="height:30px;font-size:12px;padding:0 12px" onclick="nav('calendar')">View all →</button></div>
-          <div class="panel-body" id="ov-events"><div class="loading"><div class="spin"></div>Loading…</div></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><div class="panel-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Recent WhatsApp Activity</div><button class="btn btn-ghost" style="height:30px;font-size:12px;padding:0 12px" onclick="nav('chats')">View all →</button></div>
-        <div class="panel-body no-pad" id="ov-chats"><div class="loading" style="padding:20px"><div class="spin"></div>Loading…</div></div>
-      </div>
-    </section>
-
-    <!-- TASKS -->
-    <section class="page" id="p-tasks">
-      <div class="page-header">
-        <div><div class="page-title">Tasks</div><div class="page-sub">Manage your tasks and track progress</div></div>
         <div class="page-actions">
-          <div class="search-bar" style="width:260px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="taskSearch" placeholder="Search tasks…" oninput="filterTasks()"/>
-          </div>
-          <span class="panel-badge" id="taskCount">0 tasks</span>
+          <button class="btn" onclick="loadAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"/><path d="M3 21v-5h5"/></svg>Refresh</button>
+          <button class="btn btn-pri" onclick="openAddTaskModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head" style="flex-wrap:wrap;gap:10px">
-          <div class="task-toolbar" id="taskFilters">
-            <button class="filter-pill on" onclick="setFilter('all',this)">All</button>
-            <button class="filter-pill" onclick="setFilter('To Do',this)">📋 To Do</button>
-            <button class="filter-pill" onclick="setFilter('In Progress',this)">🔄 In Progress</button>
-            <button class="filter-pill" onclick="setFilter('Review',this)">👀 Review</button>
-            <button class="filter-pill" onclick="setFilter('Done',this)">✅ Done</button>
+      <!-- Period Cards -->
+      <div class="period-grid">
+        <div class="period-card p-daily">
+          <div class="period-icon">☀️</div>
+          <div>
+            <div class="period-info-h">Daily Tasks</div>
+            <div class="period-info-d">Tasks scheduled for today</div>
+            <div><span class="period-num" id="daily-done">0</span> <small>/ <span id="daily-total">0</span> Completed</small></div>
+            <div class="period-bar"><div class="period-bar-fill" id="daily-bar" style="width:0%"></div></div>
           </div>
+          <div class="period-pending"><div class="pn-num" id="daily-pending">0</div><div class="pn-label">Pending</div></div>
+        </div>
+        <div class="period-card p-weekly">
+          <div class="period-icon">📅</div>
+          <div>
+            <div class="period-info-h">Weekly Plan</div>
+            <div class="period-info-d" id="week-range">This week</div>
+            <div><span class="period-num" id="weekly-done">0</span> <small>/ <span id="weekly-total">0</span> Completed</small></div>
+            <div class="period-bar"><div class="period-bar-fill" id="weekly-bar" style="width:0%"></div></div>
+          </div>
+          <div class="period-pending"><div class="pn-num" id="weekly-pending">0</div><div class="pn-label">Pending</div></div>
+        </div>
+        <div class="period-card p-monthly">
+          <div class="period-icon">🎯</div>
+          <div>
+            <div class="period-info-h">Monthly Goals</div>
+            <div class="period-info-d" id="month-name">This month</div>
+            <div><span class="period-num" id="monthly-done">0</span> <small>/ <span id="monthly-total">0</span> Completed</small></div>
+            <div class="period-bar"><div class="period-bar-fill" id="monthly-bar" style="width:0%"></div></div>
+          </div>
+          <div class="period-pending"><div class="pn-num" id="monthly-pending">0</div><div class="pn-label">Pending</div></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat s-blue"><div class="stat-top"><div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div></div><div class="stat-num" id="st-total">0</div><div class="stat-label">Total Tasks</div></div>
+        <div class="stat s-amber"><div class="stat-top"><div class="stat-icon">🔄</div></div><div class="stat-num" id="st-prog">0</div><div class="stat-label">In Progress</div></div>
+        <div class="stat s-green"><div class="stat-top"><div class="stat-icon">✅</div></div><div class="stat-num" id="st-done">0</div><div class="stat-label">Completed</div></div>
+        <div class="stat s-purple"><div class="stat-top"><div class="stat-icon">💬</div></div><div class="stat-num" id="st-msg">0</div><div class="stat-label">Messages</div></div>
+        <div class="stat s-cyan"><div class="stat-top"><div class="stat-icon">👥</div></div><div class="stat-num" id="st-cont">0</div><div class="stat-label">Contacts</div></div>
+        <div class="stat s-red"><div class="stat-top"><div class="stat-icon">⚠️</div></div><div class="stat-num" id="st-overdue">0</div><div class="stat-label">Overdue</div></div>
+      </div>
+
+      <!-- Recent Tasks Panel -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Recent Tasks</div>
+          <button class="btn btn-ghost" onclick="goSection('tasks')">View All →</button>
         </div>
         <div class="panel-body">
-          <div class="task-list" id="taskList"><div class="loading"><div class="spin"></div>Loading tasks…</div></div>
-        </div>
-
-        <!-- Add Task Form -->
-        <div class="panel-body" style="border-top:1px solid var(--border);padding-top:20px">
-          <div class="add-form">
-            <div class="add-form-title">+ New Task</div>
-            <input class="inp" id="nt-name" placeholder="Task name *"/>
-            <div class="form-row">
-              <input class="inp" id="nt-desc" placeholder="Description"/>
-              <input class="inp" id="nt-cat" placeholder="Category (Work, Calls…)"/>
-              <input class="inp" id="nt-due" placeholder="Due date (YYYY-MM-DD)"/>
-            </div>
-            <div class="form-row-2">
-              <select class="inp" id="nt-pri">
-                <option value="🔴 High">🔴 High Priority</option>
-                <option value="🟡 Medium" selected>🟡 Medium Priority</option>
-                <option value="🟢 Low">🟢 Low Priority</option>
-              </select>
-              <select class="inp" id="nt-status">
-                <option value="📋 To Do">📋 To Do</option>
-                <option value="🔄 In Progress">🔄 In Progress</option>
-                <option value="👀 Review">👀 Review</option>
-              </select>
-            </div>
-            <div class="form-footer">
-              <button class="btn btn-primary" onclick="addTask()">Add Task</button>
-            </div>
-          </div>
+          <div class="task-grid" id="recentTasks"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </section>
 
-    <!-- CHATS -->
-    <section class="page" id="p-chats">
-      <div class="page-header">
-        <div><div class="page-title">Chat History</div><div class="page-sub">All WhatsApp conversations</div></div>
-        <div class="page-actions"><span class="panel-badge" id="chatCount">0 contacts</span></div>
-      </div>
-      <div class="chat-shell">
-        <div class="contacts-pane">
-          <div class="contacts-head">
-            <h3>Conversations</h3>
-            <div class="search-bar">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="chatSearch" placeholder="Search contacts…" oninput="filterContacts()"/>
-            </div>
-          </div>
-          <div class="contacts-list" id="contactList"></div>
+    <!-- ====== TASKS ====== -->
+    <section class="section" id="sec-tasks">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Tasks</h1>
+          <div class="page-sub">Manage your work and priorities</div>
         </div>
-        <div class="chat-pane">
-          <div class="chat-head" id="chatHead">
-            <div class="chat-head-left">
-              <div style="color:var(--t3);font-size:13px">Select a conversation to view messages</div>
-            </div>
-          </div>
+        <div class="page-actions">
+          <input class="inp" id="taskSearch" placeholder="Search tasks…" style="width:220px" oninput="filterTasks()"/>
+          <button class="btn btn-pri" onclick="openAddTaskModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-filter="all" onclick="filterStatus('all')">All</button>
+        <button class="tab" data-filter="To Do" onclick="filterStatus('To Do')">📋 To Do</button>
+        <button class="tab" data-filter="In Progress" onclick="filterStatus('In Progress')">🔄 In Progress</button>
+        <button class="tab" data-filter="Review" onclick="filterStatus('Review')">👀 Review</button>
+        <button class="tab" data-filter="Done" onclick="filterStatus('Done')">✅ Done</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-body"><div class="task-grid" id="allTasks"><div class="empty">Loading…</div></div></div>
+      </div>
+    </section>
+
+    <!-- ====== DAILY ====== -->
+    <section class="section" id="sec-daily">
+      <div class="page-head"><div><h1 class="page-title">☀️ Daily Tasks</h1><div class="page-sub" id="dailyDateLabel">Today</div></div><div class="page-actions"><button class="btn btn-pri" onclick="openAddTaskModal()">+ Add Task</button></div></div>
+      <div class="panel"><div class="panel-body"><div class="task-grid" id="dailyTasks"><div class="empty">Loading…</div></div></div></div>
+    </section>
+
+    <!-- ====== WEEKLY ====== -->
+    <section class="section" id="sec-weekly">
+      <div class="page-head"><div><h1 class="page-title">📅 Weekly Plan</h1><div class="page-sub" id="weeklyDateLabel">Next 7 days</div></div><div class="page-actions"><button class="btn btn-pri" onclick="openAddTaskModal()">+ Add Task</button></div></div>
+      <div class="panel"><div class="panel-body"><div class="task-grid" id="weeklyTasks"><div class="empty">Loading…</div></div></div></div>
+    </section>
+
+    <!-- ====== MONTHLY ====== -->
+    <section class="section" id="sec-monthly">
+      <div class="page-head"><div><h1 class="page-title">🎯 Monthly Goals</h1><div class="page-sub" id="monthlyDateLabel">This month</div></div><div class="page-actions"><button class="btn btn-pri" onclick="openAddTaskModal()">+ Add Task</button></div></div>
+      <div class="panel"><div class="panel-body"><div class="task-grid" id="monthlyTasks"><div class="empty">Loading…</div></div></div></div>
+    </section>
+
+    <!-- ====== CHATS ====== -->
+    <section class="section" id="sec-chats" style="padding-bottom:24px">
+      <div class="page-head"><div><h1 class="page-title">Messages</h1><div class="page-sub">WhatsApp conversations powered by Claude</div></div></div>
+      <div class="chat-app">
+        <aside class="chat-sidebar">
+          <div class="chat-search-wrap"><input class="inp" id="contactSearch" placeholder="Search contacts…" oninput="filterContacts()"/></div>
+          <div class="contacts" id="contacts"><div class="empty" style="padding:24px;font-size:12px">No contacts yet</div></div>
+        </aside>
+        <div class="chat-main">
+          <div class="chat-head" id="chatHead"><div style="color:var(--t3);font-size:13px">Select a conversation</div></div>
           <div class="chat-msgs" id="chatMsgs">
             <div class="chat-empty-state">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -532,346 +674,373 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
       </div>
     </section>
 
-    <!-- CALENDAR -->
-    <section class="page" id="p-calendar">
-      <div class="page-header">
-        <div><div class="page-title">Calendar</div><div class="page-sub">Upcoming events and meetings</div></div>
-        <div class="page-actions"><span class="panel-badge" id="evCount">—</span></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="panel-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Upcoming Events</div></div>
-        <div class="panel-body"><div class="event-list" id="evList"><div class="loading"><div class="spin"></div>Loading…</div></div></div>
-      </div>
-    </section>
-
-    <!-- MEETINGS -->
-    <section class="page" id="p-meetings">
-      <div class="page-header">
-        <div><div class="page-title">Meetings Log</div><div class="page-sub">Logged from Google Sheets</div></div>
-        <div class="page-actions"><span class="panel-badge" id="mtgCount">—</span></div>
-      </div>
-      <div class="panel">
-        <div class="panel-body no-pad" id="mtgBody"><div class="loading" style="padding:20px"><div class="spin"></div>Loading…</div></div>
-      </div>
+    <!-- ====== CALENDAR ====== -->
+    <section class="section" id="sec-calendar">
+      <div class="page-head"><div><h1 class="page-title">Calendar</h1><div class="page-sub">Upcoming meetings &amp; events</div></div></div>
+      <div class="panel"><div class="panel-body"><div class="event-list" id="evList"><div class="empty">Loading…</div></div></div></div>
     </section>
 
   </main>
 </div>
 
-<script>
-// ── State ──
-let allTasks=[], allContacts=[], allChats={}, allEvents=[];
-let activeFilter='all', selectedPhone=null;
+<!-- Add Task Modal -->
+<div class="modal-bg" id="addTaskModal" onclick="if(event.target===this)closeAddTaskModal()">
+  <div class="modal">
+    <h3>Create New Task</h3>
+    <label>Task name</label>
+    <input class="inp" id="m-name" placeholder="What needs to be done?"/>
+    <label>Description</label>
+    <input class="inp" id="m-desc" placeholder="Optional details"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Category</label><input class="inp" id="m-cat" placeholder="Work, Personal..."/></div>
+      <div><label>Due date</label><input class="inp" type="date" id="m-due"/></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Priority</label><select class="inp" id="m-pri"><option>🟢 Low</option><option selected>🟡 Medium</option><option>🔴 High</option></select></div>
+      <div><label>Status</label><select class="inp" id="m-stat"><option selected>📋 To Do</option><option>🔄 In Progress</option><option>👀 Review</option><option>✅ Done</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+      <button class="btn" onclick="closeAddTaskModal()">Cancel</button>
+      <button class="btn btn-pri" onclick="submitAddTask()">Create Task</button>
+    </div>
+  </div>
+</div>
 
-// ── Clock ──
-;(function tick(){
-  const n=new Date();
-  const D=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('clock').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
-  document.getElementById('topDate').textContent=`${D[n.getDay()]}, ${M[n.getMonth()]} ${n.getDate()} ${n.getFullYear()}`;
-  const h=n.getHours();
-  document.getElementById('greeting').textContent=h<12?'Good morning ☀️':h<17?'Good afternoon 🌤️':'Good evening 🌙';
-  setTimeout(tick,1000);
+<script>
+// ===== State =====
+let allTasks=[],allContacts=[],allEvents=[],selectedPhone=null,activeStatus='all',currentSection='overview';
+
+// ===== Theme =====
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('theme',nxt);
+}
+(function(){
+  const saved=localStorage.getItem('theme')||'dark';
+  document.documentElement.setAttribute('data-theme',saved);
 })();
 
-// ── Nav ──
-function nav(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('p-'+page).classList.add('active');
-  document.getElementById('n-'+page).classList.add('active');
+// ===== Profile =====
+function loadProfile(){
+  const name=localStorage.getItem('profileName')||'My Profile';
+  const title=localStorage.getItem('profileTitle')||'Manager';
+  const avatar=localStorage.getItem('avatar');
+  document.getElementById('profileName').value=localStorage.getItem('profileName')||'';
+  document.getElementById('profileTitle').value=localStorage.getItem('profileTitle')||'';
+  document.getElementById('navName').textContent=name;
+  document.getElementById('greetName').textContent=name.split(' ')[0]||'there';
+  const init=(name||'D').charAt(0).toUpperCase();
+  document.getElementById('navAv').textContent=init;
+  document.getElementById('bigAvLetter').textContent=init;
+  if(avatar){
+    document.getElementById('navAv').innerHTML=`<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    document.getElementById('bigAv').style.backgroundImage=`url(${avatar})`;
+    document.getElementById('bigAv').style.backgroundSize='cover';
+    document.getElementById('bigAvLetter').style.display='none';
+  }
+}
+function saveProfile(){
+  localStorage.setItem('profileName',document.getElementById('profileName').value);
+  localStorage.setItem('profileTitle',document.getElementById('profileTitle').value);
+  loadProfile();
+}
+function setAvatar(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{localStorage.setItem('avatar',r.result);loadProfile();};
+  r.readAsDataURL(f);
+}
+function toggleProfilePop(e){
+  e.stopPropagation();
+  document.getElementById('profilePop').classList.toggle('show');
+}
+function hideProfilePop(){document.getElementById('profilePop').classList.remove('show');}
+document.addEventListener('click',hideProfilePop);
+
+// ===== Greeting =====
+function setGreeting(){
+  const h=new Date().getHours();
+  let g='morning';if(h>=12&&h<17)g='afternoon';else if(h>=17)g='evening';
+  document.getElementById('greetTime').textContent=g;
+  const opts={weekday:'long',day:'numeric',month:'long',year:'numeric'};
+  document.getElementById('greetDate').textContent=new Date().toLocaleDateString(undefined,opts);
 }
 
-// ── API ──
+// ===== Navigation =====
+function goSection(name){
+  currentSection=name;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.section===name));
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='sec-'+name));
+  if(name==='daily')renderPeriod('daily','dailyTasks');
+  if(name==='weekly')renderPeriod('weekly','weeklyTasks');
+  if(name==='monthly')renderPeriod('monthly','monthlyTasks');
+}
+
+// ===== API =====
 async function api(path,opts={}){
   const r=await fetch(path,opts);
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  if(!r.ok)throw new Error(r.status);
   return r.json();
 }
 
-// ── Stats ──
+async function loadAll(){
+  await Promise.all([loadStats(),loadTasks(),loadContacts(),loadEvents()]);
+}
+
 async function loadStats(){
   try{
     const d=await api('/api/stats');
-    setText('st-total', d.total_tasks??'—');
-    setText('st-prog',  d.inprogress_tasks??'—');
-    setText('st-done',  d.done_tasks??'—');
-    setText('st-msgs',  d.total_messages??'—');
-    setText('st-contacts', d.active_contacts??'—');
-    document.getElementById('connStatus').textContent='Connected';
-    document.getElementById('sidebarInfo').textContent=
-      `Supabase ${d.supabase_enabled?'✅':'⚠️'} · Google ${d.google_enabled?'✅':'⚠️'}`;
-  }catch(e){
-    document.getElementById('connStatus').textContent='⚠ Check connection';
-  }
+    document.getElementById('st-total').textContent=d.total_tasks||0;
+    document.getElementById('st-prog').textContent=d.inprogress_tasks||0;
+    document.getElementById('st-done').textContent=d.done_tasks||0;
+    document.getElementById('st-msg').textContent=d.total_messages||0;
+    document.getElementById('st-cont').textContent=d.active_contacts||0;
+    document.getElementById('chatBadge').textContent=d.total_messages||0;
+  }catch(e){}
 }
 
-// ── Tasks ──
 async function loadTasks(){
   try{
     const d=await api('/api/tasks');
     allTasks=d.tasks||[];
-    const active=allTasks.filter(t=>!t.status?.includes('Done')&&!t.status?.includes('Cancelled'));
-    document.getElementById('nb-tasks').textContent=active.length;
-    document.getElementById('taskCount').textContent=allTasks.length+' tasks';
-    renderTasks(allTasks.slice(0,6),'ov-tasks',true);
-    filterTasks();
+    document.getElementById('taskBadge').textContent=allTasks.length;
+    renderTasks();
+    renderRecent();
+    renderPeriodCards();
+    updateRing();
   }catch(e){
-    document.getElementById('taskList').innerHTML='<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Could not load tasks. Check backend.</div>';
+    document.getElementById('allTasks').innerHTML='<div class="empty">Could not load tasks</div>';
   }
 }
 
-function filterTasks(){
-  const search=document.getElementById('taskSearch')?.value.toLowerCase()||'';
-  let filtered=allTasks;
-  if(activeFilter!=='all') filtered=filtered.filter(t=>t.status?.includes(activeFilter));
-  if(search) filtered=filtered.filter(t=>t.task_name?.toLowerCase().includes(search)||t.description?.toLowerCase().includes(search)||t.category?.toLowerCase().includes(search));
-  renderTasks(filtered,'taskList',false);
-  document.getElementById('taskCount').textContent=filtered.length+' tasks';
+function renderTasks(){
+  const f=allTasks.filter(t=>{
+    const okS=activeStatus==='all'||(t.status||'').includes(activeStatus);
+    const q=document.getElementById('taskSearch').value.toLowerCase();
+    const okQ=!q||(t.task_name||'').toLowerCase().includes(q);
+    return okS&&okQ;
+  });
+  const el=document.getElementById('allTasks');
+  if(!f.length){el.innerHTML='<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/></svg>No tasks yet</div>';return;}
+  el.innerHTML=f.map(t=>taskRowHtml(t)).join('');
 }
 
-function setFilter(f,btn){
-  document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  activeFilter=f;
-  filterTasks();
+function renderRecent(){
+  const el=document.getElementById('recentTasks');
+  if(!allTasks.length){el.innerHTML='<div class="empty">No tasks yet — create your first one!</div>';return;}
+  el.innerHTML=allTasks.slice(0,5).map(t=>taskRowHtml(t)).join('');
 }
 
-function renderTasks(tasks,containerId,compact){
-  const el=document.getElementById(containerId);
-  if(!tasks?.length){el.innerHTML='<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>No tasks found</div>';return;}
-  el.innerHTML='<div class="task-list">'+tasks.map(t=>taskRow(t,compact)).join('')+'</div>';
-}
-
-function taskRow(t,compact=false){
-  const s=t.status||'';
-  const sc=s.includes('To Do')?'pill-todo':s.includes('Progress')?'pill-progress':s.includes('Review')?'pill-review':s.includes('Done')?'pill-done':'pill-cancelled';
-  const p=t.priority||'';
-  const pc=p.includes('High')?'pill-high':p.includes('Low')?'pill-low':'pill-medium';
-  const id=t.id||t['#']||'?';
-  const done=s.includes('Done');
+function taskRowHtml(t){
+  const done=(t.status||'').includes('Done');
+  let scls='s-todo';
+  if((t.status||'').includes('Progress'))scls='s-progress';
+  else if((t.status||'').includes('Review'))scls='s-review';
+  else if(done)scls='s-done';
   return `<div class="task-row">
-    <span class="task-id">#${id}</span>
-    <div class="task-check ${done?'checked':''}" onclick="quickStatus(${id},'${done?'To Do':'Done'}')" title="${done?'Mark undone':'Mark done'}"></div>
-    <div class="task-body">
-      <div class="task-name ${done?'done':''}">${esc(t.task_name||t['Task Name']||'')}</div>
-      ${!compact?`<div class="task-meta"><span class="task-cat">${esc(t.category||t.Category||'')}</span>${(t.due_date||t['Due Date'])?'<span>· Due '+esc(t.due_date||t['Due Date'])+'</span>':''}</div>`:''}
+    <div class="task-check ${done?'done':''}" onclick="toggleDone(${t.id},'${esc(t.status||'')}')"></div>
+    <div class="task-info">
+      <div class="task-name ${done?'done':''}">${esc(t.task_name||'')}</div>
+      <div class="task-meta">
+        ${t.category?`<span class="pill">${esc(t.category)}</span>`:''}
+        ${t.due_date?`<span>📅 ${esc(t.due_date)}</span>`:''}
+      </div>
     </div>
-    <span class="pill ${sc}">${s}</span>
-    <span class="pill ${pc}" style="font-size:10px">${p.replace(/[^\w\s]/g,'').trim()}</span>
-    ${!compact?`<div class="task-acts">
-      <button class="icon-btn" onclick="quickStatus(${id},'In Progress')" title="Start">▶</button>
-      <button class="icon-btn del" onclick="deleteTask(${id})" title="Delete">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-      </button>
-    </div>`:''}
+    <div class="task-priority">${(t.priority||'').slice(0,2)}</div>
+    <div class="task-status-pill ${scls}">${esc((t.status||'').replace(/^[^\\s]+\\s*/,''))}</div>
+    <button class="task-del" onclick="delTask(${t.id})" title="Delete">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+    </button>
   </div>`;
 }
 
-async function quickStatus(id,status){
-  try{
-    await api(`/api/tasks/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
-    await loadTasks();
-  }catch(e){alert('Error: '+e.message);}
+function filterStatus(s){
+  activeStatus=s;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.filter===s));
+  renderTasks();
+}
+function filterTasks(){renderTasks();}
+
+async function toggleDone(id,curStatus){
+  const newStatus=curStatus.includes('Done')?'To Do':'Done';
+  await api(`/api/tasks/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:newStatus})});
+  loadTasks();loadStats();
 }
 
-async function deleteTask(id){
-  if(!confirm('Delete this task?')) return;
-  try{await api(`/api/tasks/${id}`,{method:'DELETE'});await loadTasks();}
-  catch(e){alert('Error: '+e.message);}
+async function delTask(id){
+  if(!confirm('Delete this task?'))return;
+  await api(`/api/tasks/${id}`,{method:'DELETE'});
+  loadTasks();loadStats();
 }
 
-async function addTask(){
-  const name=document.getElementById('nt-name').value.trim();
-  if(!name){alert('Task name is required!');return;}
-  const p=new URLSearchParams({
-    task_name:name,
-    description:document.getElementById('nt-desc').value.trim(),
-    category:document.getElementById('nt-cat').value.trim()||'General',
-    priority:document.getElementById('nt-pri').value,
-    due_date:document.getElementById('nt-due').value.trim(),
-    status:document.getElementById('nt-status').value,
+// ===== Period Tasks =====
+function tasksInPeriod(period){
+  const today=new Date();today.setHours(0,0,0,0);
+  return allTasks.filter(t=>{
+    const dd=(t.due_date||'').slice(0,10);
+    if(!dd)return false;
+    const d=new Date(dd);if(isNaN(d))return false;
+    if(period==='daily')return d.getTime()===today.getTime();
+    if(period==='weekly'){
+      const end=new Date(today);end.setDate(end.getDate()+7);
+      return d>=today&&d<=end;
+    }
+    if(period==='monthly')return d.getMonth()===today.getMonth()&&d.getFullYear()===today.getFullYear();
+    if(period==='overdue')return d<today&&!(t.status||'').includes('Done');
+    return false;
   });
-  try{
-    const d=await api('/api/tasks/add?'+p,{method:'POST'});
-    if(d.success){
-      ['nt-name','nt-desc','nt-cat','nt-due'].forEach(id=>document.getElementById(id).value='');
-      await loadTasks();
-    }else{alert('Error: '+d.error);}
-  }catch(e){alert('Error: '+e.message);}
 }
 
-// ── Chats ──
-async function loadChats(){
+function renderPeriodCards(){
+  ['daily','weekly','monthly'].forEach(p=>{
+    const list=tasksInPeriod(p);
+    const done=list.filter(t=>(t.status||'').includes('Done')).length;
+    const total=list.length;
+    const pending=total-done;
+    document.getElementById(`${p}-done`).textContent=done;
+    document.getElementById(`${p}-total`).textContent=total;
+    document.getElementById(`${p}-pending`).textContent=pending;
+    const pct=total?Math.round(done/total*100):0;
+    document.getElementById(`${p}-bar`).style.width=pct+'%';
+  });
+  document.getElementById('st-overdue').textContent=tasksInPeriod('overdue').length;
+}
+
+function renderPeriod(period,elId){
+  const list=tasksInPeriod(period);
+  const el=document.getElementById(elId);
+  if(!list.length){el.innerHTML='<div class="empty">No tasks for this period</div>';return;}
+  el.innerHTML=list.map(t=>taskRowHtml(t)).join('');
+}
+
+function updateRing(){
+  const total=allTasks.length;
+  const done=allTasks.filter(t=>(t.status||'').includes('Done')).length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('ringPct').textContent=pct+'%';
+  document.getElementById('ringSub').textContent=(total-done)+' tasks remaining';
+  const C=2*Math.PI*34;
+  document.getElementById('ringFg').setAttribute('stroke-dasharray',C);
+  document.getElementById('ringFg').setAttribute('stroke-dashoffset',C*(1-pct/100));
+}
+
+// ===== Add Task =====
+function openAddTaskModal(){document.getElementById('addTaskModal').classList.add('show');document.getElementById('m-name').focus();}
+function closeAddTaskModal(){document.getElementById('addTaskModal').classList.remove('show');}
+async function submitAddTask(){
+  const n=document.getElementById('m-name').value.trim();
+  if(!n){alert('Task name is required');return;}
+  const params=new URLSearchParams({
+    task_name:n,
+    description:document.getElementById('m-desc').value,
+    category:document.getElementById('m-cat').value||'General',
+    due_date:document.getElementById('m-due').value,
+    priority:document.getElementById('m-pri').value,
+    status:document.getElementById('m-stat').value,
+  });
+  await api('/api/tasks/add?'+params,{method:'POST'});
+  closeAddTaskModal();
+  ['m-name','m-desc','m-cat','m-due'].forEach(id=>document.getElementById(id).value='');
+  loadTasks();loadStats();
+}
+
+// ===== Contacts / Chat =====
+async function loadContacts(){
   try{
     const d=await api('/api/contacts');
     allContacts=d.contacts||[];
-    document.getElementById('nb-chats').textContent=allContacts.length;
-    document.getElementById('chatCount').textContent=allContacts.length+' contacts';
     renderContacts(allContacts);
-    renderOvChats();
-  }catch(e){
-    document.getElementById('contactList').innerHTML='<div style="padding:16px;color:var(--t3);font-size:13px">Could not load chats.</div>';
-  }
+  }catch(e){}
 }
-
+function renderContacts(arr){
+  const el=document.getElementById('contacts');
+  if(!arr.length){el.innerHTML='<div class="empty" style="padding:24px;font-size:12px">No contacts yet</div>';return;}
+  el.innerHTML=arr.map(c=>`<div class="contact ${selectedPhone===c.phone?'active':''}" onclick="selectContact('${c.phone}')">
+    <div class="contact-av">${(c.phone||'').slice(-2).toUpperCase()}</div>
+    <div class="contact-info">
+      <div class="contact-phone">+${c.phone}</div>
+      <div class="contact-last">${esc((c.message||'').slice(0,40))}</div>
+    </div>
+    <button class="contact-del" onclick="deleteChat(event,'${c.phone}')" title="Delete">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+    </button>
+  </div>`).join('');
+}
 function filterContacts(){
-  const s=document.getElementById('chatSearch').value.toLowerCase();
-  renderContacts(allContacts.filter(c=>c.phone?.includes(s)));
+  const q=document.getElementById('contactSearch').value.toLowerCase();
+  renderContacts(allContacts.filter(c=>(c.phone||'').includes(q)||(c.message||'').toLowerCase().includes(q)));
 }
-
-function renderContacts(contacts){
-  const el=document.getElementById('contactList');
-  if(!contacts.length){el.innerHTML='<div style="padding:16px;color:var(--t3);font-size:13px">No contacts yet</div>';return;}
-  el.innerHTML=contacts.map(c=>{
-    const init=c.phone?.slice(-2).toUpperCase()||'?';
-    return `<div class="contact-row ${selectedPhone===c.phone?'on':''}" onclick="selectContact('${c.phone}')">
-      <div class="contact-av">${init}</div>
-      <div class="contact-info">
-        <div class="contact-phone">+${c.phone}</div>
-        <div class="contact-last">${esc((c.message||'').slice(0,40))}</div>
-      </div>
-      <button class="contact-del" onclick="deleteChat(event,'${c.phone}')" title="Delete chat">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-      </button>
-    </div>`;
-  }).join('');
-}
-
 async function selectContact(phone){
-  selectedPhone=phone;
-  renderContacts(allContacts);
+  selectedPhone=phone;renderContacts(allContacts);
   const hd=document.getElementById('chatHead');
-  hd.innerHTML=`<div class="chat-head-left"><div class="chat-head-av">${phone.slice(-2).toUpperCase()}</div><div><div class="chat-head-name">+${phone}</div><div class="chat-head-sub">Loading messages…</div></div></div>`;
+  hd.innerHTML=`<div class="chat-head-av">${phone.slice(-2).toUpperCase()}</div><div><div class="chat-head-name">+${phone}</div><div class="chat-head-sub">Loading…</div></div>`;
   try{
     const d=await api(`/api/chats?phone=${phone}`);
     const msgs=[...(d.chats||[])].reverse();
     hd.querySelector('.chat-head-sub').textContent=msgs.length+' messages';
     const el=document.getElementById('chatMsgs');
-    if(!msgs.length){el.innerHTML='<div class="chat-empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div>No messages yet</div></div>';return;}
+    if(!msgs.length){el.innerHTML='<div class="chat-empty-state">No messages yet</div>';return;}
     el.innerHTML=msgs.map(m=>{
       const out=m.direction==='OUT';
       const btn=m.msg_type==='button';
-      const audio=m.msg_type==='audio';
-      const img=m.msg_type==='image';
-      const doc=m.msg_type==='document';
       let icon='';
-      if(audio) icon='🎤 ';
-      if(img) icon='🖼️ ';
-      if(doc) icon='📄 ';
-      const txt=(m.message||'').replace(/\n/g,'<br>');
-      return `<div class="bubble-wrap ${out?'out':'in'}">
-        <div class="bubble ${btn?'bubble-btn':''}">${icon}${btn?txt.replace(/\|/g,' · '):txt}</div>
-        <div class="bubble-time">${fmt(m.created_at)}</div>
-      </div>`;
+      if(m.msg_type==='audio')icon='🎤 ';
+      if(m.msg_type==='image')icon='🖼️ ';
+      if(m.msg_type==='document')icon='📄 ';
+      const txt=esc(m.message||'').replace(/\n/g,'<br>');
+      return `<div class="bubble-wrap ${out?'out':'in'}"><div class="bubble ${btn?'bubble-btn':''}">${icon}${txt}</div><div class="bubble-time">${fmt(m.created_at)}</div></div>`;
     }).join('');
     el.scrollTop=el.scrollHeight;
-  }catch(e){
-    document.getElementById('chatMsgs').innerHTML='<div class="chat-empty-state">Error loading messages</div>';
-  }
+  }catch(e){document.getElementById('chatMsgs').innerHTML='<div class="chat-empty-state">Error loading messages</div>';}
 }
-
 async function deleteChat(e,phone){
   e.stopPropagation();
-  if(!confirm(`Delete all chats with +${phone}?`)) return;
-  try{
-    await api(`/api/chats/${phone}`,{method:'DELETE'});
-    if(selectedPhone===phone){
-      selectedPhone=null;
-      document.getElementById('chatMsgs').innerHTML='<div class="chat-empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div>No conversation selected</div></div>';
-    }
-    await loadChats();
-  }catch(e){alert('Error: '+e.message);}
+  if(!confirm(`Delete all chats with +${phone}?`))return;
+  await api(`/api/chats/${phone}`,{method:'DELETE'});
+  if(selectedPhone===phone){selectedPhone=null;document.getElementById('chatMsgs').innerHTML='<div class="chat-empty-state">No conversation selected</div>';}
+  loadContacts();
 }
 
-function renderOvChats(){
-  const el=document.getElementById('ov-chats');
-  if(!allContacts.length){el.innerHTML='<div class="empty">No messages yet</div>';return;}
-  el.innerHTML='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Contact</th><th>Last Message</th><th>Direction</th><th>Time</th></tr></thead><tbody>'+
-    allContacts.slice(0,6).map(c=>`<tr>
-      <td class="td-bold">+${esc(c.phone||'')}</td>
-      <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((c.message||'').slice(0,60))}</td>
-      <td><span style="color:${c.direction==='IN'?'var(--blue)':'var(--green)'};font-size:12px;font-weight:600">${c.direction}</span></td>
-      <td style="font-size:11px;color:var(--t3)">${fmt(c.created_at)}</td>
-    </tr>`).join('')+'</tbody></table></div>';
-}
-
-// ── Events ──
+// ===== Events =====
 async function loadEvents(){
   try{
     const d=await api('/api/events');
     allEvents=d.events||[];
-    document.getElementById('evCount').textContent=allEvents.length+' events';
-    renderEvents(allEvents,'evList');
-    renderOvEvents(allEvents.slice(0,4));
-  }catch(e){
-    document.getElementById('evList').innerHTML='<div class="empty">Could not load events</div>';
-  }
+    renderEvents();
+  }catch(e){document.getElementById('evList').innerHTML='<div class="empty">Calendar not configured</div>';}
 }
-
-function renderEvents(events,id){
-  const el=document.getElementById(id);
-  if(!events.length){el.innerHTML='<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>No upcoming events</div>';return;}
-  el.innerHTML='<div class="event-list">'+events.map(e=>{
+function renderEvents(){
+  const el=document.getElementById('evList');
+  if(!allEvents.length){el.innerHTML='<div class="empty">No upcoming events</div>';return;}
+  el.innerHTML=allEvents.map(e=>{
     const d=new Date(e.start);
-    const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const t=d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
-    return `<div class="event-row">
-      <div class="event-date"><div class="event-day">${d.getDate()}</div><div class="event-mon">${M[d.getMonth()]}</div></div>
-      <div class="event-stripe"></div>
-      <div class="event-body">
-        <div class="event-title">${esc(e.title)}</div>
-        <div class="event-meta">${t}${e.description?' · '+esc(e.description.slice(0,60)):''}</div>
-      </div>
-      ${e.link?`<a href="${e.link}" target="_blank" style="color:var(--accent);font-size:12px;text-decoration:none;flex-shrink:0;align-self:center">Open ↗</a>`:''}
+    return `<div class="event">
+      <div class="event-date"><div class="event-day">${d.getDate()}</div><div class="event-month">${d.toLocaleString('default',{month:'short'})}</div></div>
+      <div class="event-info"><div class="event-title">${esc(e.title||'Untitled')}</div><div class="event-time">${d.toLocaleString()}</div></div>
     </div>`;
-  }).join('')+'</div>';
+  }).join('');
 }
 
-function renderOvEvents(events){renderEvents(events,'ov-events');}
-
-// ── Meetings ──
-async function loadMeetings(){
-  try{
-    const d=await api('/api/meetings');
-    const m=d.meetings||[];
-    document.getElementById('mtgCount').textContent=m.length+' meetings';
-    const el=document.getElementById('mtgBody');
-    if(!m.length){el.innerHTML='<div class="empty">No meetings logged yet</div>';return;}
-    el.innerHTML='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Title</th><th>Start</th><th>End</th><th>Attendees</th><th>Notes</th></tr></thead><tbody>'+
-      [...m].reverse().map(r=>`<tr>
-        <td style="color:var(--t3)">${r['#']||r.id||''}</td>
-        <td class="td-bold">${esc(r.Title||r.title||'')}</td>
-        <td style="font-size:12px">${r.Start||r.start||''}</td>
-        <td style="font-size:12px">${r.End||r.end||''}</td>
-        <td style="font-size:12px;color:var(--t2)">${esc((r.Attendees||r.attendees||'').slice(0,40))}</td>
-        <td style="font-size:12px;color:var(--t2)">${esc((r.Description||r.description||'').slice(0,50))}</td>
-      </tr>`).join('')+'</tbody></table></div>';
-  }catch(e){
-    document.getElementById('mtgBody').innerHTML='<div class="empty">Could not load meetings</div>';
-  }
+// ===== Export =====
+function exportData(){
+  const data={tasks:allTasks,contacts:allContacts,events:allEvents,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`niksol-export-${Date.now()}.json`;a.click();
 }
 
-// ── Refresh ──
-async function refreshAll(){
-  document.getElementById('connStatus').textContent='Refreshing…';
-  await Promise.allSettled([loadStats(),loadTasks(),loadChats(),loadEvents(),loadMeetings()]);
-  document.getElementById('connStatus').textContent='Connected';
-}
-setInterval(refreshAll,60000);
-refreshAll();
+// ===== Utils =====
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmt(d){if(!d)return'';try{return new Date(d).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}catch{return d}}
 
-// ── Utils ──
-function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmt(ts){
-  if(!ts)return '';
-  try{
-    const d=new Date(ts);
-    return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
-  }catch{return ts;}
-}
+// ===== Init =====
+loadProfile();setGreeting();loadAll();
+setInterval(loadAll,60000);
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('globalSearch').focus();}
+});
 </script>
 </body>
 </html>
