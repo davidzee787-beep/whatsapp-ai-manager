@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio — Alex Mercer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Scroll Progress -->
+  <div class="scroll-progress" id="scrollProgress"></div>
+
+  <!-- Navigation -->
+  <nav class="nav" id="nav">
+    <div class="nav-logo">AM</div>
+    <ul class="nav-links">
+      <li><a href="#about" class="nav-link">About</a></li>
+      <li><a href="#skills" class="nav-link">Skills</a></li>
+      <li><a href="#work" class="nav-link">Work</a></li>
+      <li><a href="#contact" class="nav-link">Contact</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="#contact" class="btn-outline">Hire Me</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section — Asymmetric, left-aligned -->
+  <section class="hero" id="hero">
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+    <div class="hero-split">
+      <div class="hero-content">
+        <p class="hero-eyebrow reveal-up">Creative Developer &amp; Designer</p>
+        <h1 class="hero-title">
+          <span class="line reveal-up delay-1">Building digital</span>
+          <span class="line italic reveal-up delay-2">things that matter.</span>
+        </h1>
+        <p class="hero-sub reveal-up delay-3">
+          I turn complex problems into precise, high-performance interfaces.
+          Obsessed with craft, motion, and the 1% details that change everything.
+        </p>
+        <div class="hero-actions reveal-up delay-4">
+          <a href="#work" class="btn-primary">View My Work <span class="btn-arrow">→</span></a>
+          <a href="#about" class="btn-ghost">About me</a>
+        </div>
+        <div class="hero-meta reveal-up delay-5">
+          <div class="meta-item">
+            <span class="meta-num" data-count="87">0</span><span class="meta-plus">+</span>
+            <span class="meta-label">Projects</span>
+          </div>
+          <div class="meta-divider"></div>
+          <div class="meta-item">
+            <span class="meta-num" data-count="43">0</span><span class="meta-plus">+</span>
+            <span class="meta-label">Clients</span>
+          </div>
+          <div class="meta-divider"></div>
+          <div class="meta-item">
+            <span class="meta-num" data-count="12">0</span><span class="meta-plus">+</span>
+            <span class="meta-label">Awards</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual reveal-right">
+        <div class="hero-img-frame">
+          <div class="hero-img-inner">
+            <div class="hero-monogram">AM</div>
+            <div class="hero-float-badge">
+              <span class="badge-dot"></span>
+              <span>Available for work</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll-hint">
+      <div class="scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee-section">
+    <div class="marquee-track">
+      <span>Interface Design</span><span class="sep">—</span>
+      <span>Frontend Engineering</span><span class="sep">—</span>
+      <span>Motion Systems</span><span class="sep">—</span>
+      <span>Brand Identity</span><span class="sep">—</span>
+      <span>Design Systems</span><span class="sep">—</span>
+      <span>Interface Design</span><span class="sep">—</span>
+      <span>Frontend Engineering</span><span class="sep">—</span>
+      <span>Motion Systems</span><span class="sep">—</span>
+      <span>Brand Identity</span><span class="sep">—</span>
+      <span>Design Systems</span><span class="sep">—</span>
+    </div>
+  </div>
+
+  <!-- About Section -->
+  <section class="about section" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-text-col">
+          <p class="section-label reveal-up">About Me</p>
+          <h2 class="section-title reveal-up delay-1">
+            A designer who<br /><em>codes with precision</em>
+          </h2>
+          <p class="about-body reveal-up delay-2">
+            Based in New York. Multidisciplinary creative developer specializing in
+            exceptional digital experiences. I bridge design and engineering — not
+            as a compromise, but as a practice.
+          </p>
+          <p class="about-body reveal-up delay-3">
+            Every interaction has weight. Every layout has a reason. I build interfaces
+            that perform as well as they look, and look as good as they perform.
+          </p>
+          <a href="#work" class="btn-ghost reveal-up delay-4" style="margin-top:8px;display:inline-flex">See my work →</a>
+        </div>
+        <div class="about-visual-col">
+          <div class="about-image-wrap reveal-left">
+            <div class="about-img-box">
+              <div class="about-avatar-text">AM</div>
+              <div class="about-img-overlay"></div>
+            </div>
+            <div class="about-detail-card">
+              <span class="detail-label">Currently working on</span>
+              <span class="detail-value">Fintech Dashboard System</span>
+              <span class="detail-stack">React · Framer Motion · Figma</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills Section — Zig-zag, not 3-col cards -->
+  <section class="skills section" id="skills">
+    <div class="container">
+      <div class="skills-header">
+        <div>
+          <p class="section-label reveal-up">Expertise</p>
+          <h2 class="section-title reveal-up delay-1">What I do <em>best</em></h2>
+        </div>
+        <p class="skills-intro reveal-up delay-2">
+          A focused set of skills, refined over 5 years of shipping real products
+          for demanding clients.
+        </p>
+      </div>
+
+      <div class="skills-rows">
+        <div class="skill-row reveal-up delay-1">
+          <div class="skill-row-num">01</div>
+          <div class="skill-row-content">
+            <h3>UI / UX Design</h3>
+            <p>Research-driven interfaces that solve real problems. From initial audit to polished, production-ready design systems.</p>
+          </div>
+          <div class="skill-row-tags">
+            <span>Figma</span><span>Prototyping</span><span>User Research</span><span>Design Systems</span>
+          </div>
+          <div class="skill-bar-mini">
+            <div class="skill-bar-fill-mini" data-width="95"></div>
+          </div>
+        </div>
+
+        <div class="skill-row reveal-up delay-2">
+          <div class="skill-row-num">02</div>
+          <div class="skill-row-content">
+            <h3>Frontend Engineering</h3>
+            <p>High-performance, pixel-perfect builds using modern frameworks, Web APIs, and hardware-accelerated animation.</p>
+          </div>
+          <div class="skill-row-tags">
+            <span>React</span><span>Next.js</span><span>TypeScript</span><span>WebGL</span>
+          </div>
+          <div class="skill-bar-mini">
+            <div class="skill-bar-fill-mini" data-width="90"></div>
+          </div>
+        </div>
+
+        <div class="skill-row reveal-up delay-3">
+          <div class="skill-row-num">03</div>
+          <div class="skill-row-content">
+            <h3>Motion Engineering</h3>
+            <p>Spring-physics-driven animation with purpose. Scroll choreography, state transitions, and perpetual micro-interactions.</p>
+          </div>
+          <div class="skill-row-tags">
+            <span>Framer Motion</span><span>GSAP</span><span>CSS Transitions</span>
+          </div>
+          <div class="skill-bar-mini">
+            <div class="skill-bar-fill-mini" data-width="88"></div>
+          </div>
+        </div>
+
+        <div class="skill-row reveal-up delay-4">
+          <div class="skill-row-num">04</div>
+          <div class="skill-row-content">
+            <h3>Brand &amp; Creative Direction</h3>
+            <p>Cohesive visual systems built to scale. Identity, typography, and communication that holds up across every surface.</p>
+          </div>
+          <div class="skill-row-tags">
+            <span>Strategy</span><span>Typography</span><span>Identity</span>
+          </div>
+          <div class="skill-bar-mini">
+            <div class="skill-bar-fill-mini" data-width="82"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Work Section -->
+  <section class="work section" id="work">
+    <div class="container">
+      <div class="work-header">
+        <div>
+          <p class="section-label reveal-up">Portfolio</p>
+          <h2 class="section-title reveal-up delay-1">Selected <em>work</em></h2>
+        </div>
+        <a href="#" class="btn-ghost reveal-up delay-2">All projects →</a>
+      </div>
+
+      <div class="projects-list">
+
+        <div class="project-item reveal-up">
+          <div class="project-left">
+            <div class="project-thumb" style="--hue:220">
+              <span class="thumb-label">LF</span>
+              <div class="thumb-shine"></div>
+            </div>
+          </div>
+          <div class="project-center">
+            <div class="project-meta">
+              <span class="project-num">01</span>
+              <div class="project-tags">
+                <span>Fintech</span><span>Dashboard</span><span>Web App</span>
+              </div>
+            </div>
+            <h3 class="project-title">Luminary Finance</h3>
+            <p class="project-desc">Next-generation fintech dashboard with real-time data visualisation, predictive analytics, and a design language built around trust and clarity.</p>
+          </div>
+          <div class="project-right">
+            <a href="#" class="project-link">
+              <span>View case study</span>
+              <span class="link-arrow">↗</span>
+            </a>
+            <div class="project-year">2025</div>
+          </div>
+        </div>
+
+        <div class="project-item reveal-up delay-1">
+          <div class="project-left">
+            <div class="project-thumb" style="--hue:340">
+              <span class="thumb-label">NA</span>
+              <div class="thumb-shine"></div>
+            </div>
+          </div>
+          <div class="project-center">
+            <div class="project-meta">
+              <span class="project-num">02</span>
+              <div class="project-tags">
+                <span>E-Commerce</span><span>Luxury</span><span>Fashion</span>
+              </div>
+            </div>
+            <h3 class="project-title">Noire Atelier</h3>
+            <p class="project-desc">An immersive e-commerce experience for a luxury fashion house. Editorial photography meets zero-friction shopping — conversion up 34% post-launch.</p>
+          </div>
+          <div class="project-right">
+            <a href="#" class="project-link">
+              <span>View case study</span>
+              <span class="link-arrow">↗</span>
+            </a>
+            <div class="project-year">2025</div>
+          </div>
+        </div>
+
+        <div class="project-item reveal-up delay-2">
+          <div class="project-left">
+            <div class="project-thumb" style="--hue:160">
+              <span class="thumb-label">AS</span>
+              <div class="thumb-shine"></div>
+            </div>
+          </div>
+          <div class="project-center">
+            <div class="project-meta">
+              <span class="project-num">03</span>
+              <div class="project-tags">
+                <span>WebGL</span><span>3D</span><span>Agency</span>
+              </div>
+            </div>
+            <h3 class="project-title">Aether Studio</h3>
+            <p class="project-desc">3D interactive portfolio for a creative agency. WebGL-powered scroll-driven storytelling. Loaded in under 1.8s, scored 96 on Lighthouse.</p>
+          </div>
+          <div class="project-right">
+            <a href="#" class="project-link">
+              <span>View case study</span>
+              <span class="link-arrow">↗</span>
+            </a>
+            <div class="project-year">2024</div>
+          </div>
+        </div>
+
+        <div class="project-item reveal-up delay-3">
+          <div class="project-left">
+            <div class="project-thumb" style="--hue:38">
+              <span class="thumb-label">SH</span>
+              <div class="thumb-shine"></div>
+            </div>
+          </div>
+          <div class="project-center">
+            <div class="project-meta">
+              <span class="project-num">04</span>
+              <div class="project-tags">
+                <span>Healthcare</span><span>Product Design</span><span>A11y</span>
+              </div>
+            </div>
+            <h3 class="project-title">Solaris Health</h3>
+            <p class="project-desc">Human-centred health platform making complex medical data approachable. WCAG 2.1 AA compliant. 4.8-star App Store rating at launch.</p>
+          </div>
+          <div class="project-right">
+            <a href="#" class="project-link">
+              <span>View case study</span>
+              <span class="link-arrow">↗</span>
+            </a>
+            <div class="project-year">2024</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials — horizontal scroll, not 3-col -->
+  <section class="testimonials section">
+    <div class="container">
+      <p class="section-label reveal-up">Testimonials</p>
+      <h2 class="section-title reveal-up delay-1">What clients <em>say</em></h2>
+    </div>
+    <div class="testimonials-scroll">
+      <div class="testimonials-track">
+
+        <div class="testimonial-card reveal-up delay-1">
+          <p class="testimonial-text">"Alex delivered a website that exceeded every expectation. The attention to detail and motion design transformed our brand presence entirely — and our sales numbers reflected it within a week."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar" style="--hue:200">SC</div>
+            <div>
+              <strong>Simone Calder</strong>
+              <span>CEO, Luminary Finance</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal-up delay-2">
+          <p class="testimonial-text">"Working with Alex was a rare experience. The ability to translate an abstract creative brief into a precise, functioning product — without losing any nuance — is genuinely uncommon."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar" style="--hue:340">MR</div>
+            <div>
+              <strong>Marcus Renaud</strong>
+              <span>Creative Director, Noire Atelier</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal-up delay-3">
+          <p class="testimonial-text">"The most technically precise and design-literate developer I've worked with. Alex doesn't just build — they architect experiences that outlast the brief and keep performing months later."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar" style="--hue:160">EW</div>
+            <div>
+              <strong>Elena Walsh</strong>
+              <span>Founder, Aether Studio</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal-up delay-4">
+          <p class="testimonial-text">"Brought structure to a chaotic design process and shipped a product our users actually love. Alex's systematic approach to both design and code cut our QA time in half."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar" style="--hue:38">JT</div>
+            <div>
+              <strong>James Thorn</strong>
+              <span>Product Lead, Solaris Health</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="contact section" id="contact">
+    <div class="container">
+      <div class="contact-grid">
+        <div class="contact-left reveal-up">
+          <p class="section-label">Let's Talk</p>
+          <h2 class="contact-title">Ready to build<br /><em>something great?</em></h2>
+          <p class="contact-sub">Currently available for select freelance projects and collaborations. I work with founders, agencies, and product teams who care about craft.</p>
+          <a href="mailto:alex@example.com" class="btn-primary btn-large">
+            Start a Project <span class="btn-arrow">→</span>
+          </a>
+        </div>
+        <div class="contact-right reveal-up delay-2">
+          <div class="contact-info-block">
+            <span class="info-label">Email</span>
+            <a href="mailto:alex@example.com" class="info-value">alex@example.com</a>
+          </div>
+          <div class="contact-info-block">
+            <span class="info-label">Location</span>
+            <span class="info-value">New York, NY — Open to remote</span>
+          </div>
+          <div class="contact-info-block">
+            <span class="info-label">Availability</span>
+            <span class="info-value avail"><span class="avail-dot"></span>Available from May 2026</span>
+          </div>
+          <div class="contact-socials">
+            <a href="#" class="social-link">Twitter</a>
+            <a href="#" class="social-link">LinkedIn</a>
+            <a href="#" class="social-link">Dribbble</a>
+            <a href="#" class="social-link">GitHub</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-logo">AM</span>
+        <span class="footer-copy">© 2026 Alex Mercer. All rights reserved.</span>
+        <span class="footer-made">Built with precision.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

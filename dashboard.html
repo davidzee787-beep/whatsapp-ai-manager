@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Personal AI Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & Variables ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;--bg2:#0d0d1a;--bg3:#11111e;--card:#131320;--card2:#181828;
+  --border:#1c1c2e;--border2:#242436;
+  --t1:#eeeef8;--t2:#8888aa;--t3:#444466;
+  --accent:#6366f1;--accent2:#818cf8;--aglow:rgba(99,102,241,.3);
+  --blue:#4f8ef7;--cyan:#22d3ee;--green:#10b981;--amber:#f59e0b;
+  --purple:#a78bfa;--red:#f43f5e;--pink:#ec4899;
+  --r:12px;--rs:8px;--rx:5px;
+  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);font-size:14px;display:flex;flex-direction:column}
+
+/* ── Layout ── */
+.app{display:flex;flex:1;overflow:hidden;height:calc(100vh - 56px)}
+
+/* ── Topbar ── */
+.topbar{
+  height:56px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;padding:0 20px;flex-shrink:0;
+}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.logo-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  display:grid;place-items:center;font-weight:700;font-size:13px;
+  box-shadow:0 0 14px var(--aglow);
+}
+.logo-name{font-weight:700;font-size:15px;letter-spacing:-.3px}
+.topbar-clock{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--t2)}
+.topbar-date{font-size:11px;color:var(--t3)}
+.topbar-status{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);
+  border-radius:99px;padding:4px 12px;font-size:11px;color:var(--green);
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.topbar-btn{
+  padding:6px 14px;border-radius:var(--rx);border:1px solid var(--border2);
+  background:var(--card);color:var(--t2);font-size:12px;cursor:pointer;
+  font-family:var(--font);transition:.2s;
+}
+.topbar-btn:hover{color:var(--t1);border-color:var(--accent)}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:220px;background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;
+}
+.sidebar-section{padding:16px 12px 8px;font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 16px;
+  border-radius:var(--rs);margin:1px 8px;cursor:pointer;
+  color:var(--t2);font-size:13px;font-weight:500;transition:.15s;
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--card);color:var(--t1)}
+.nav-item.active{background:var(--card);color:var(--accent);border-color:rgba(99,102,241,.2)}
+.nav-item svg{flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.nav-badge{
+  margin-left:auto;background:var(--accent);color:#fff;
+  font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;
+}
+.sidebar-bottom{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.api-url-input{
+  width:100%;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--rx);color:var(--t1);font-size:11px;font-family:var(--mono);
+  outline:none;
+}
+.api-url-input:focus{border-color:var(--accent)}
+.api-url-label{font-size:10px;color:var(--t3);margin-bottom:5px}
+
+/* ── Main content ── */
+.content{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.page{display:none;flex-direction:column;gap:20px;padding:24px;flex:1}
+.page.active{display:flex}
+
+/* ── Stats row ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;display:flex;align-items:center;gap:14px;transition:.2s;
+}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+.si-blue  {background:rgba(79,142,247,.12);color:var(--blue)}
+.si-green {background:rgba(16,185,129,.12);color:var(--green)}
+.si-amber {background:rgba(245,158,11,.12);color:var(--amber)}
+.si-purple{background:rgba(167,139,250,.12);color:var(--purple)}
+.si-cyan  {background:rgba(34,211,238,.12);color:var(--cyan)}
+.stat-val{font-size:24px;font-weight:700;line-height:1}
+.stat-lbl{font-size:11px;color:var(--t2);margin-top:3px}
+
+/* ── Panel ── */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.panel-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.panel-title svg{color:var(--t3)}
+.panel-body{padding:16px 18px}
+.p-badge{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:99px;
+  padding:2px 10px;font-size:11px;color:var(--t2);
+}
+
+/* ── Tasks ── */
+.tasks-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.filter-btn{
+  padding:5px 14px;border-radius:99px;border:1px solid var(--border2);
+  background:none;color:var(--t2);font-size:12px;cursor:pointer;font-family:var(--font);
+  transition:.15s;
+}
+.filter-btn:hover,.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(99,102,241,.08)}
+.task-grid{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.task-card{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--rs);transition:.15s;
+}
+.task-card:hover{border-color:var(--border2)}
+.task-num{font-size:11px;color:var(--t3);font-family:var(--mono);min-width:28px}
+.task-info{flex:1;min-width:0}
+.task-name{font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-meta{font-size:11px;color:var(--t2);margin-top:2px}
+.task-status{
+  padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500;
+  white-space:nowrap;flex-shrink:0;
+}
+.status-todo    {background:rgba(79,142,247,.15);color:var(--blue)}
+.status-progress{background:rgba(245,158,11,.15);color:var(--amber)}
+.status-review  {background:rgba(167,139,250,.15);color:var(--purple)}
+.status-done    {background:rgba(16,185,129,.15);color:var(--green)}
+.status-cancelled{background:rgba(244,63,94,.15);color:var(--red)}
+.task-pri{
+  padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;flex-shrink:0;
+}
+.pri-high  {background:rgba(244,63,94,.12);color:var(--red)}
+.pri-medium{background:rgba(245,158,11,.12);color:var(--amber)}
+.pri-low   {background:rgba(16,185,129,.12);color:var(--green)}
+.task-actions{display:flex;gap:6px;flex-shrink:0}
+.task-btn{
+  padding:4px 10px;border-radius:var(--rx);border:1px solid var(--border2);
+  background:none;color:var(--t2);font-size:11px;cursor:pointer;font-family:var(--font);
+  transition:.15s;
+}
+.task-btn:hover{border-color:var(--accent);color:var(--accent)}
+.task-btn.done-btn:hover{border-color:var(--green);color:var(--green)}
+.empty-state{text-align:center;padding:40px;color:var(--t3);font-size:13px}
+.loading{display:flex;align-items:center;gap:10px;color:var(--t3);font-size:13px;padding:20px 0}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Add Task form ── */
+.add-task-form{
+  display:flex;flex-direction:column;gap:12px;padding:16px 18px;
+  border-top:1px solid var(--border);
+}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.form-input,.form-select{
+  padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--rx);color:var(--t1);font-size:13px;font-family:var(--font);
+  outline:none;transition:.2s;width:100%;
+}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--t3)}
+.form-select option{background:var(--bg2)}
+.btn-primary{
+  padding:8px 20px;background:var(--accent);border:none;border-radius:var(--rx);
+  color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);
+  transition:.2s;align-self:flex-end;
+}
+.btn-primary:hover{opacity:.85}
+
+/* ── Chat ── */
+.chat-layout{display:grid;grid-template-columns:260px 1fr;gap:0;height:600px;overflow:hidden;border-radius:var(--r);border:1px solid var(--border)}
+.chat-list{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto}
+.chat-list-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
+.chat-contact{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;
+  cursor:pointer;border-bottom:1px solid var(--border);transition:.15s;
+}
+.chat-contact:hover{background:var(--card)}
+.chat-contact.active{background:var(--card);border-left:2px solid var(--accent)}
+.contact-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0;
+}
+.contact-info{flex:1;min-width:0}
+.contact-phone{font-size:13px;font-weight:500;color:var(--t1)}
+.contact-last{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-window{display:flex;flex-direction:column;background:var(--bg3)}
+.chat-header{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.chat-header-name{font-weight:600;font-size:14px}
+.chat-header-sub{font-size:11px;color:var(--t2)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:75%;display:flex;flex-direction:column;gap:3px}
+.msg-in{align-self:flex-start}
+.msg-out{align-self:flex-end;align-items:flex-end}
+.msg-bubble{
+  padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.45;
+}
+.msg-in .msg-bubble{background:var(--card2);color:var(--t1);border-radius:12px 12px 12px 3px}
+.msg-out .msg-bubble{background:var(--accent);color:#fff;border-radius:12px 12px 3px 12px}
+.msg-time{font-size:10px;color:var(--t3)}
+.msg-btn-bubble{
+  background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);
+  color:var(--accent2);padding:6px 12px;border-radius:99px;font-size:12px;
+}
+.chat-empty{flex:1;display:grid;place-items:center;color:var(--t3);font-size:13px}
+
+/* ── Calendar ── */
+.events-list{display:flex;flex-direction:column;gap:10px}
+.event-card{
+  display:flex;gap:14px;padding:14px 16px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:var(--rs);align-items:flex-start;
+}
+.event-time-col{display:flex;flex-direction:column;align-items:center;min-width:56px}
+.event-date-num{font-size:22px;font-weight:700;color:var(--accent);line-height:1}
+.event-date-mon{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em}
+.event-bar{width:3px;border-radius:99px;background:var(--accent);align-self:stretch;margin:0 2px;flex-shrink:0}
+.event-info{flex:1}
+.event-title{font-size:13px;font-weight:500;margin-bottom:3px}
+.event-sub{font-size:11px;color:var(--t2)}
+
+/* ── Two col grid ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{
+  text-align:left;padding:0 14px 10px;border-bottom:1px solid var(--border);
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);
+}
+.data-table th:first-child{padding-left:0}
+.data-table td{
+  padding:10px 14px;border-bottom:1px solid var(--border);color:var(--t2);vertical-align:middle;
+}
+.data-table td:first-child{padding-left:0}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.td-bold{color:var(--t1)!important;font-weight:500}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .sidebar{display:none}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .two-col,.three-col{grid-template-columns:1fr}
+  .chat-layout{grid-template-columns:1fr;height:auto}
+  .chat-list{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-icon">AI</div>
+    <span class="logo-name">Personal Manager</span>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;margin-left:16px">
+    <div class="topbar-clock" id="clock">--:--:--</div>
+    <div class="topbar-date" id="topDate">--</div>
+  </div>
+  <div class="topbar-status" style="margin-left:16px">
+    <div class="dot"></div>
+    <span id="connStatus">Connecting...</span>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="topbar-btn" onclick="refreshAll()">⟳ Refresh</button>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Menu</div>
+
+    <div class="nav-item active" onclick="showPage('overview')" id="nav-overview">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Overview
+    </div>
+
+    <div class="nav-item" onclick="showPage('tasks')" id="nav-tasks">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Tasks
+      <span class="nav-badge" id="taskBadge">0</span>
+    </div>
+
+    <div class="nav-item" onclick="showPage('chats')" id="nav-chats">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat History
+      <span class="nav-badge" id="chatBadge">0</span>
+    </div>
+
+    <div class="nav-item" onclick="showPage('calendar')" id="nav-calendar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Calendar
+    </div>
+
+    <div class="nav-item" onclick="showPage('meetings')" id="nav-meetings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Meetings Log
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="api-url-label">Railway Backend URL</div>
+      <input class="api-url-input" id="apiUrlInput" placeholder="https://yourapp.railway.app" />
+      <button class="topbar-btn" style="width:100%;margin-top:8px;text-align:center" onclick="saveApiUrl()">Save URL</button>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ══ OVERVIEW ══ -->
+    <div class="page active" id="page-overview">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon si-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div><div class="stat-val" id="sTotalTasks">—</div><div class="stat-lbl">Total Tasks</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div><div class="stat-val" id="sInProgress">—</div><div class="stat-lbl">In Progress</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <div><div class="stat-val" id="sDone">—</div><div class="stat-lbl">Completed</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-cyan"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div><div class="stat-val" id="sEvents">—</div><div class="stat-lbl">Upcoming Events</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div><div class="stat-val" id="sChats">—</div><div class="stat-lbl">Active Chats</div></div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <!-- Recent tasks -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Recent Tasks
+            </div>
+            <button class="topbar-btn" onclick="showPage('tasks')">View all →</button>
+          </div>
+          <div class="panel-body" id="overviewTasks"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+        </div>
+
+        <!-- Upcoming events -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Upcoming Events
+            </div>
+            <button class="topbar-btn" onclick="showPage('calendar')">View all →</button>
+          </div>
+          <div class="panel-body" id="overviewEvents"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- Recent chats -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Recent WhatsApp Chats
+          </div>
+          <button class="topbar-btn" onclick="showPage('chats')">View all →</button>
+        </div>
+        <div class="panel-body" id="overviewChats"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TASKS ══ -->
+    <div class="page" id="page-tasks">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/></svg>
+            Task Manager
+          </div>
+          <span class="p-badge" id="tasksCount">0 tasks</span>
+        </div>
+        <div class="panel-body">
+          <div class="tasks-toolbar">
+            <button class="filter-btn active" onclick="filterTasks('all',this)">All</button>
+            <button class="filter-btn" onclick="filterTasks('To Do',this)">📋 To Do</button>
+            <button class="filter-btn" onclick="filterTasks('In Progress',this)">🔄 In Progress</button>
+            <button class="filter-btn" onclick="filterTasks('Review',this)">👀 Review</button>
+            <button class="filter-btn" onclick="filterTasks('Done',this)">✅ Done</button>
+          </div>
+          <div class="task-grid" id="taskList"><div class="loading"><div class="spinner"></div>Loading tasks...</div></div>
+        </div>
+        <!-- Add task form -->
+        <div class="add-task-form">
+          <div style="font-size:13px;font-weight:600;color:var(--t1)">+ Add New Task</div>
+          <input class="form-input" id="newTaskName" placeholder="Task name *" />
+          <div class="form-row">
+            <input class="form-input" id="newTaskDesc" placeholder="Description" />
+            <input class="form-input" id="newTaskCategory" placeholder="Category (e.g. Work, Calls)" />
+            <input class="form-input" id="newTaskDue" placeholder="Due date (YYYY-MM-DD)" />
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select class="form-select" id="newTaskPriority" style="width:180px">
+              <option value="🔴 High">🔴 High Priority</option>
+              <option value="🟡 Medium" selected>🟡 Medium Priority</option>
+              <option value="🟢 Low">🟢 Low Priority</option>
+            </select>
+            <select class="form-select" id="newTaskStatus" style="width:180px">
+              <option value="📋 To Do">📋 To Do</option>
+              <option value="🔄 In Progress">🔄 In Progress</option>
+              <option value="👀 Review">👀 Review</option>
+            </select>
+            <button class="btn-primary" onclick="addTask()">Add Task</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CHATS ══ -->
+    <div class="page" id="page-chats">
+      <div class="chat-layout">
+        <div class="chat-list">
+          <div class="chat-list-header">💬 Conversations</div>
+          <div id="contactList"></div>
+        </div>
+        <div class="chat-window">
+          <div class="chat-header" id="chatHeader">
+            <div class="chat-header-name">Select a conversation</div>
+            <div class="chat-header-sub">Chat history from WhatsApp</div>
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-empty">Select a contact to view chat history</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CALENDAR ══ -->
+    <div class="page" id="page-calendar">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Upcoming Events
+          </div>
+          <span class="p-badge" id="eventsCount">—</span>
+        </div>
+        <div class="panel-body">
+          <div class="events-list" id="eventsList"><div class="loading"><div class="spinner"></div>Loading events...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MEETINGS ══ -->
+    <div class="page" id="page-meetings">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Meetings Log
+            <span style="font-size:11px;color:var(--t3);font-weight:400">· from Google Sheets</span>
+          </div>
+          <span class="p-badge" id="meetingsCount">—</span>
+        </div>
+        <div class="panel-body" id="meetingsList"><div class="loading"><div class="spinner"></div>Loading meetings...</div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+// ---------------------------------------------------------------------------
+// Config — set your Railway URL here or via the sidebar input
+// ---------------------------------------------------------------------------
+let API_BASE = localStorage.getItem('api_base') || '';
+document.getElementById('apiUrlInput').value = API_BASE;
+
+function saveApiUrl() {
+  API_BASE = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
+  localStorage.setItem('api_base', API_BASE);
+  document.getElementById('connStatus').textContent = 'URL saved — refreshing...';
+  refreshAll();
+}
+
+// ---------------------------------------------------------------------------
+// Clock
+// ---------------------------------------------------------------------------
+function updateClock() {
+  const now  = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('clock').textContent =
+    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  document.getElementById('topDate').textContent =
+    `${days[now.getDay()]}, ${mons[now.getMonth()]} ${now.getDate()}`;
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+setInterval(updateClock, 1000); updateClock();
+
+// ---------------------------------------------------------------------------
+// Navigation
+// ---------------------------------------------------------------------------
+let currentPage = 'overview';
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  currentPage = name;
+}
+
+// ---------------------------------------------------------------------------
+// API fetch
+// ---------------------------------------------------------------------------
+async function api(path) {
+  const base = API_BASE || window.location.origin;
+  const res  = await fetch(base + path);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+let allTasks = [], allChats = [], allEvents = [];
+
+async function loadStats() {
+  try {
+    const d = await api('/api/stats');
+    document.getElementById('sTotalTasks').textContent  = d.total_tasks     ?? '—';
+    document.getElementById('sInProgress').textContent  = d.inprogress_tasks ?? '—';
+    document.getElementById('sDone').textContent        = d.done_tasks       ?? '—';
+    document.getElementById('sEvents').textContent      = d.upcoming_events  ?? '—';
+    document.getElementById('sChats').textContent       = d.active_chats     ?? '—';
+    document.getElementById('connStatus').textContent   = 'Connected ✓';
+  } catch(e) {
+    document.getElementById('connStatus').textContent = '⚠ Disconnected';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+async function loadTasks() {
+  try {
+    const d = await api('/api/tasks');
+    allTasks = d.tasks || [];
+    document.getElementById('taskBadge').textContent = allTasks.filter(t => !t.Status?.includes('Done') && !t.Status?.includes('Cancelled')).length;
+    document.getElementById('tasksCount').textContent = allTasks.length + ' tasks';
+    renderTasks(allTasks);
+    renderOverviewTasks(allTasks.slice(0, 5));
+  } catch(e) {
+    document.getElementById('taskList').innerHTML = `<div class="empty-state">Could not load tasks. Check Railway URL.</div>`;
+  }
+}
+
+let currentFilter = 'all';
+function filterTasks(status, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = status;
+  const filtered = status === 'all' ? allTasks : allTasks.filter(t => t.Status?.includes(status));
+  renderTasks(filtered);
+}
+
+function renderTasks(tasks) {
+  const el = document.getElementById('taskList');
+  if (!tasks.length) { el.innerHTML = '<div class="empty-state">No tasks found</div>'; return; }
+  el.innerHTML = tasks.map(t => taskCard(t)).join('');
+}
+
+function renderOverviewTasks(tasks) {
+  const el = document.getElementById('overviewTasks');
+  if (!tasks.length) { el.innerHTML = '<div class="empty-state">No tasks yet</div>'; return; }
+  el.innerHTML = tasks.map(t => taskCard(t, true)).join('');
+}
+
+function taskCard(t, compact = false) {
+  const statusClass = statusCls(t.Status || '');
+  const priClass    = priCls(t.Priority || '');
+  return `
+  <div class="task-card">
+    <span class="task-num">#${t['#'] || '?'}</span>
+    <div class="task-info">
+      <div class="task-name">${esc(t['Task Name'] || t.task_name || '')}</div>
+      ${!compact ? `<div class="task-meta">${esc(t.Category||'')}${t['Due Date']?' · Due: '+t['Due Date']:''}</div>` : ''}
+    </div>
+    <span class="task-status ${statusClass}">${t.Status || ''}</span>
+    <span class="task-pri ${priClass}">${(t.Priority||'').replace(/[^\w\s]/g,'').trim()}</span>
+    ${!compact ? `
+    <div class="task-actions">
+      <button class="task-btn" onclick="quickStatus(${t['#']},'In Progress')">▶ Start</button>
+      <button class="task-btn done-btn" onclick="quickStatus(${t['#']},'Done')">✓ Done</button>
+    </div>` : ''}
+  </div>`;
+}
+
+function statusCls(s) {
+  if (s.includes('To Do'))      return 'status-todo';
+  if (s.includes('Progress'))   return 'status-progress';
+  if (s.includes('Review'))     return 'status-review';
+  if (s.includes('Done'))       return 'status-done';
+  if (s.includes('Cancelled'))  return 'status-cancelled';
+  return 'status-todo';
+}
+function priCls(p) {
+  if (p.includes('High'))   return 'pri-high';
+  if (p.includes('Medium')) return 'pri-medium';
+  return 'pri-low';
+}
+
+async function quickStatus(id, status) {
+  try {
+    const base = API_BASE || window.location.origin;
+    await fetch(`${base}/api/tasks/${id}/status`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status}),
+    });
+    await loadTasks();
+  } catch(e) { alert('Error updating task: ' + e.message); }
+}
+
+async function addTask() {
+  const name = document.getElementById('newTaskName').value.trim();
+  if (!name) { alert('Task name is required!'); return; }
+
+  const params = new URLSearchParams({
+    task_name: name,
+    description: document.getElementById('newTaskDesc').value.trim(),
+    category:    document.getElementById('newTaskCategory').value.trim() || 'General',
+    priority:    document.getElementById('newTaskPriority').value,
+    due_date:    document.getElementById('newTaskDue').value.trim(),
+    status:      document.getElementById('newTaskStatus').value,
+  });
+
+  try {
+    const base = API_BASE || window.location.origin;
+    const res  = await fetch(`${base}/api/tasks/add?${params}`, {method:'POST'});
+    const d    = await res.json();
+    if (d.success) {
+      ['newTaskName','newTaskDesc','newTaskCategory','newTaskDue'].forEach(id => document.getElementById(id).value = '');
+      await loadTasks();
+    } else { alert('Error: ' + d.error); }
+  } catch(e) { alert('Error adding task: ' + e.message); }
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+async function loadEvents() {
+  try {
+    const d = await api('/api/events');
+    allEvents = d.events || [];
+    document.getElementById('eventsCount').textContent = allEvents.length + ' events';
+    renderEvents(allEvents, 'eventsList');
+    renderOverviewEvents(allEvents.slice(0, 4));
+  } catch(e) {
+    document.getElementById('eventsList').innerHTML = '<div class="empty-state">Could not load events.</div>';
+  }
+}
+
+function renderEvents(events, containerId) {
+  const el = document.getElementById(containerId);
+  if (!events.length) { el.innerHTML = '<div class="empty-state">No upcoming events</div>'; return; }
+  el.innerHTML = events.map(e => {
+    const d = new Date(e.start);
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    const start = d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true});
+    return `
+    <div class="event-card">
+      <div class="event-time-col">
+        <div class="event-date-num">${d.getDate()}</div>
+        <div class="event-date-mon">${mon}</div>
+      </div>
+      <div class="event-bar"></div>
+      <div class="event-info">
+        <div class="event-title">${esc(e.title)}</div>
+        <div class="event-sub">${start}${e.description ? ' · ' + esc(e.description.slice(0,60)) : ''}</div>
+      </div>
+      ${e.link ? `<a href="${e.link}" target="_blank" style="color:var(--accent);font-size:12px;text-decoration:none;flex-shrink:0">Open ↗</a>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderOverviewEvents(events) {
+  renderEvents(events, 'overviewEvents');
+}
+
+// ---------------------------------------------------------------------------
+// Chats
+// ---------------------------------------------------------------------------
+let chatData = {}, selectedPhone = null;
+
+async function loadChats() {
+  try {
+    const d = await api('/api/chats');
+    const chats = d.chats || [];
+    document.getElementById('chatBadge').textContent = new Set(chats.map(c => c.Phone)).size;
+
+    // Group by phone
+    chatData = {};
+    chats.forEach(c => {
+      if (!chatData[c.Phone]) chatData[c.Phone] = [];
+      chatData[c.Phone].push(c);
+    });
+
+    renderContactList();
+    renderOverviewChats(chats.slice(0, 5));
+  } catch(e) {
+    document.getElementById('contactList').innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">Could not load chats.</div>';
+  }
+}
+
+function renderContactList() {
+  const el = document.getElementById('contactList');
+  const phones = Object.keys(chatData);
+  if (!phones.length) { el.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">No chats yet</div>'; return; }
+
+  el.innerHTML = phones.map(phone => {
+    const msgs = chatData[phone];
+    const last = msgs[0];
+    const initials = phone.slice(-2).toUpperCase();
+    return `
+    <div class="chat-contact ${selectedPhone===phone?'active':''}" onclick="selectContact('${phone}')">
+      <div class="contact-avatar">${initials}</div>
+      <div class="contact-info">
+        <div class="contact-phone">+${phone}</div>
+        <div class="contact-last">${esc((last?.Message||'').slice(0,40))}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectContact(phone) {
+  selectedPhone = phone;
+  renderContactList();
+
+  document.getElementById('chatHeader').innerHTML = `
+    <div class="chat-header-name">+${phone}</div>
+    <div class="chat-header-sub">${chatData[phone].length} messages</div>`;
+
+  const msgs = [...(chatData[phone] || [])].reverse();
+  const el   = document.getElementById('chatMessages');
+  el.innerHTML = msgs.map(m => {
+    const isOut = m.Direction === 'OUT';
+    const isBtn = m.Type === 'button';
+    return `
+    <div class="msg ${isOut?'msg-out':'msg-in'}">
+      <div class="${isBtn?'msg-btn-bubble':'msg-bubble'}">${esc(m.Message||'')}</div>
+      <div class="msg-time">${m.Timestamp||''}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderOverviewChats(chats) {
+  const el = document.getElementById('overviewChats');
+  if (!chats.length) { el.innerHTML = '<div class="empty-state">No chat history yet</div>'; return; }
+  el.innerHTML = `
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Phone</th><th>Direction</th><th>Message</th><th>Time</th></tr></thead>
+      <tbody>
+        ${chats.map(c => `<tr>
+          <td class="td-bold">+${esc(c.Phone||'')}</td>
+          <td><span style="color:${c.Direction==='IN'?'var(--blue)':'var(--green)'}">${c.Direction}</span></td>
+          <td>${esc((c.Message||'').slice(0,60))}${(c.Message||'').length>60?'…':''}</td>
+          <td style="font-size:11px;color:var(--t3)">${c.Timestamp||''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Meetings
+// ---------------------------------------------------------------------------
+async function loadMeetings() {
+  try {
+    const d = await api('/api/meetings');
+    const meetings = d.meetings || [];
+    document.getElementById('meetingsCount').textContent = meetings.length + ' meetings';
+    const el = document.getElementById('meetingsList');
+    if (!meetings.length) { el.innerHTML = '<div class="empty-state">No meetings logged yet</div>'; return; }
+    el.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Title</th><th>Start</th><th>End</th><th>Attendees</th><th>Notes</th></tr></thead>
+        <tbody>
+          ${[...meetings].reverse().map(m => `<tr>
+            <td style="color:var(--t3)">${m['#']||''}</td>
+            <td class="td-bold">${esc(m.Title||'')}</td>
+            <td style="font-size:12px">${m.Start||''}</td>
+            <td style="font-size:12px">${m.End||''}</td>
+            <td style="font-size:12px;color:var(--t2)">${esc((m.Attendees||'').slice(0,40))}</td>
+            <td style="font-size:12px;color:var(--t2)">${esc((m.Description||'').slice(0,50))}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch(e) {
+    document.getElementById('meetingsList').innerHTML = '<div class="empty-state">Could not load meetings.</div>';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Add task API (need endpoint)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Refresh all
+// ---------------------------------------------------------------------------
+async function refreshAll() {
+  await Promise.allSettled([loadStats(), loadTasks(), loadEvents(), loadChats(), loadMeetings()]);
+}
+
+setInterval(refreshAll, 60000);
+refreshAll();
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: whatsapp-ai-manager
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn whatsapp_agent:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: GOOGLE_SPREADSHEET_ID
+        sync: false
+      - key: GOOGLE_CALENDAR_ID
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_FILE
+        sync: false
+      - key: GOOGLE_SHEET_NAME
+        sync: false
