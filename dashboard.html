@@ -753,8 +753,16 @@ async function selectContact(phone){
     el.innerHTML=msgs.map(m=>{
       const out=m.direction==='OUT';
       const btn=m.msg_type==='button';
+      const audio=m.msg_type==='audio';
+      const img=m.msg_type==='image';
+      const doc=m.msg_type==='document';
+      let icon='';
+      if(audio) icon='🎤 ';
+      if(img) icon='🖼️ ';
+      if(doc) icon='📄 ';
+      const txt=(m.message||'').replace(/\n/g,'<br>');
       return `<div class="bubble-wrap ${out?'out':'in'}">
-        <div class="bubble ${btn?'bubble-btn':''}">${esc(m.message||'')}</div>
+        <div class="bubble ${btn?'bubble-btn':''}">${icon}${btn?txt.replace(/\|/g,' · '):txt}</div>
         <div class="bubble-time">${fmt(m.created_at)}</div>
       </div>`;
     }).join('');

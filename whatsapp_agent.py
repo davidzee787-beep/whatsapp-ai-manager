@@ -266,6 +266,9 @@ TOOLS = [
 def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
     if name == "send_button_menu":
         send_buttons(phone, inp["body"], inp["buttons"])
+        # Log the button message to chat history so it shows in dashboard
+        btn_labels = " | ".join(b.get("title","") for b in inp.get("buttons",[]))
+        log_chat(phone, "OUT", f"🔘 {inp['body']}\n[{btn_labels}]", "button")
         return json.dumps({"success": True})
 
     # Tasks — use Supabase if available, else Google Sheets
@@ -406,9 +409,11 @@ def webhook():
         m,t,c = request.args.get("hub.mode",""), request.args.get("hub.verify_token",""), request.args.get("hub.challenge","")
         return (c,200) if m=="subscribe" and t==VERIFY_TOKEN else ("Forbidden",403)
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(force=True, silent=True) or {}
     try:
-        value    = data["entry"][0]["changes"][0]["value"]
+        entry = data.get("entry", [])
+        if not entry: return jsonify({"status":"ok"}), 200
+        value = entry[0].get("changes", [{}])[0].get("value", {})
         if "messages" not in value: return jsonify({"status":"ok"}),200
         msg      = value["messages"][0]
         from_num = msg["from"]
@@ -447,7 +452,9 @@ def webhook():
             send_text(from_num, reply)
             log_chat(from_num,"OUT",reply,"text")
     except Exception as e:
+        import traceback
         print(f"⚠️ Webhook error: {e}")
+        print(traceback.format_exc())
     return jsonify({"status":"ok"}),200
 
 # ---------------------------------------------------------------------------
