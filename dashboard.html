@@ -1,47 +1,77 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Muhammad Daud Zia — Personal Assistant</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-/* ===== Theme Variables ===== */
-:root[data-theme="dark"]{
-  --bg:#0a0a14;--bg2:#11111f;--bg3:#161628;--card:#181830;--card2:#1f1f3a;
-  --border:#22223e;--border2:#2c2c4f;--border3:#3a3a66;
-  --t1:#f5f5ff;--t2:#9494c4;--t3:#5a5a86;--t4:#2a2a48;
-  --accent:#6366f1;--accent2:#818cf8;--accent3:#a5b4fc;
-  --aglow:rgba(99,102,241,.25);--aglow2:rgba(99,102,241,.08);
-  --green:#10b981;--green2:rgba(16,185,129,.12);
-  --blue:#3b82f6;--blue2:rgba(59,130,246,.12);
-  --amber:#f59e0b;--amber2:rgba(245,158,11,.12);
-  --purple:#a78bfa;--purple2:rgba(167,139,250,.12);
-  --cyan:#22d3ee;--cyan2:rgba(34,211,238,.12);
-  --red:#f43f5e;--red2:rgba(244,63,94,.12);
-  --shadow:0 4px 20px rgba(0,0,0,.4);
-  --shadow2:0 12px 40px rgba(0,0,0,.5);
-}
+/* ===== Theme Variables — Gold & Luxury ===== */
 :root[data-theme="light"]{
-  --bg:#f5f7fb;--bg2:#ffffff;--bg3:#f8f9fc;--card:#ffffff;--card2:#f8f9fc;
-  --border:#e5e7eb;--border2:#d1d5db;--border3:#9ca3af;
-  --t1:#0f172a;--t2:#475569;--t3:#94a3b8;--t4:#cbd5e1;
-  --accent:#4f46e5;--accent2:#6366f1;--accent3:#818cf8;
-  --aglow:rgba(79,70,229,.15);--aglow2:rgba(79,70,229,.05);
-  --green:#059669;--green2:rgba(5,150,105,.12);
-  --blue:#2563eb;--blue2:rgba(37,99,235,.12);
-  --amber:#d97706;--amber2:rgba(217,119,6,.12);
-  --purple:#8b5cf6;--purple2:rgba(139,92,246,.12);
-  --cyan:#0891b2;--cyan2:rgba(8,145,178,.12);
-  --red:#dc2626;--red2:rgba(220,38,38,.12);
-  --shadow:0 2px 8px rgba(0,0,0,.06);
-  --shadow2:0 8px 30px rgba(0,0,0,.08);
+  --bg:#fbf8f1;          /* warm ivory */
+  --bg2:#ffffff;         /* pure white */
+  --bg3:#f7f1e3;         /* cream */
+  --card:#ffffff;
+  --card2:#fdf9ee;
+  --border:#ece3cc;
+  --border2:#dfd2a8;
+  --border3:#c9b67a;
+  --t1:#1a1308;          /* deep brown-black */
+  --t2:#5c4a25;          /* warm bronze */
+  --t3:#9c8959;          /* muted gold */
+  --t4:#d4c89e;
+  --accent:#b8860b;      /* dark goldenrod — primary */
+  --accent2:#d4af37;     /* metallic gold */
+  --accent3:#e6c560;     /* light gold */
+  --gold-grad:linear-gradient(135deg,#b8860b 0%,#d4af37 50%,#f4d160 100%);
+  --gold-grad2:linear-gradient(135deg,#9a7209,#c9a226);
+  --aglow:rgba(184,134,11,.18);
+  --aglow2:rgba(212,175,55,.06);
+  --green:#5a8a3a;--green2:rgba(90,138,58,.1);
+  --blue:#3a6b8a;--blue2:rgba(58,107,138,.1);
+  --amber:#c8841a;--amber2:rgba(200,132,26,.12);
+  --purple:#8a5a8a;--purple2:rgba(138,90,138,.1);
+  --cyan:#3a8a8a;--cyan2:rgba(58,138,138,.1);
+  --red:#a83a3a;--red2:rgba(168,58,58,.1);
+  --shadow:0 2px 10px rgba(184,134,11,.08);
+  --shadow2:0 12px 40px rgba(184,134,11,.15);
+}
+:root[data-theme="dark"]{
+  --bg:#0e0a04;          /* near-black with warm tint */
+  --bg2:#15100a;         /* charcoal brown */
+  --bg3:#1d1610;         /* dark sepia */
+  --card:#1a1408;
+  --card2:#241a0e;
+  --border:#2d2316;
+  --border2:#3d2f1e;
+  --border3:#5a4528;
+  --t1:#fdf5dc;          /* champagne */
+  --t2:#c9b67a;          /* soft gold */
+  --t3:#8a7649;
+  --t4:#3d2f1e;
+  --accent:#d4af37;      /* metallic gold */
+  --accent2:#e6c560;     /* lighter gold */
+  --accent3:#f4d160;     /* highlight */
+  --gold-grad:linear-gradient(135deg,#d4af37 0%,#e6c560 50%,#f4d160 100%);
+  --gold-grad2:linear-gradient(135deg,#b8860b,#d4af37);
+  --aglow:rgba(212,175,55,.22);
+  --aglow2:rgba(212,175,55,.07);
+  --green:#7ab059;--green2:rgba(122,176,89,.12);
+  --blue:#5a92b5;--blue2:rgba(90,146,181,.12);
+  --amber:#e0a040;--amber2:rgba(224,160,64,.14);
+  --purple:#b07ab0;--purple2:rgba(176,122,176,.12);
+  --cyan:#5ab0b0;--cyan2:rgba(90,176,176,.12);
+  --red:#d05a5a;--red2:rgba(208,90,90,.12);
+  --shadow:0 4px 20px rgba(0,0,0,.5);
+  --shadow2:0 12px 40px rgba(0,0,0,.6);
 }
 :root{
   --r:14px;--rs:10px;--rx:7px;
-  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+  --font:'Inter',sans-serif;
+  --serif:'Playfair Display',serif;
+  --mono:'JetBrains Mono',monospace;
 }
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
 
@@ -53,13 +83,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 }
 .tbar-logo{display:flex;align-items:center;gap:12px;margin-right:32px;cursor:pointer}
 .logo-gem{
-  width:36px;height:36px;border-radius:10px;flex-shrink:0;
-  background:linear-gradient(135deg,var(--accent) 0%,var(--cyan) 100%);
-  display:grid;place-items:center;font-weight:800;font-size:14px;color:#fff;
-  box-shadow:0 0 24px var(--aglow);
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  background:var(--gold-grad);
+  display:grid;place-items:center;font-weight:800;font-size:15px;color:#1a1308;
+  font-family:var(--serif);
+  box-shadow:0 0 24px var(--aglow),inset 0 1px 0 rgba(255,255,255,.4);
 }
-.logo-label{font-weight:700;font-size:16px;letter-spacing:-.4px;color:var(--t1)}
-.logo-sub{font-size:10px;color:var(--t3);letter-spacing:.04em;margin-top:1px}
+.logo-label{font-family:var(--serif);font-weight:700;font-size:17px;letter-spacing:-.3px;color:var(--t1)}
+.logo-sub{font-size:9px;color:var(--accent);letter-spacing:.18em;margin-top:1px;font-weight:600;text-transform:uppercase}
 
 .tbar-search{
   flex:1;max-width:520px;margin:0 auto;position:relative;
@@ -95,8 +126,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 }
 .profile-chip:hover{border-color:var(--accent)}
 .profile-av{
-  width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--purple));
-  display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;
+  width:32px;height:32px;border-radius:8px;background:var(--gold-grad);
+  display:grid;place-items:center;color:#1a1308;font-weight:700;font-size:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
 }
 .profile-info{display:flex;flex-direction:column;line-height:1.2}
 .profile-name{font-size:12px;font-weight:600;color:var(--t1)}
@@ -112,9 +144,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 @keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .pop-head{display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--border)}
 .pop-av{
-  width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--purple));
-  display:grid;place-items:center;color:#fff;font-weight:700;font-size:18px;cursor:pointer;
-  position:relative;overflow:hidden;
+  width:48px;height:48px;border-radius:12px;background:var(--gold-grad);
+  display:grid;place-items:center;color:#1a1308;font-weight:700;font-size:18px;cursor:pointer;
+  position:relative;overflow:hidden;font-family:var(--serif);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
 }
 .pop-av input[type=file]{display:none}
 .pop-av .cam{
@@ -154,7 +187,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 }
 .nav-item:hover{background:var(--card);color:var(--t1)}
 .nav-item.active{
-  background:var(--aglow2);color:var(--accent2);border-color:var(--aglow);
+  background:var(--aglow2);color:var(--accent);border-color:var(--aglow);font-weight:600;
 }
 .nav-item.active::before{
   content:'';position:absolute;left:-12px;top:50%;transform:translateY(-50%);
@@ -176,9 +209,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .progress-ring svg{transform:rotate(-90deg)}
 .progress-ring circle{fill:none;stroke-width:6}
 .progress-ring .ring-bg{stroke:var(--border)}
-.progress-ring .ring-fg{stroke:var(--accent);stroke-linecap:round;transition:.8s}
+.progress-ring .ring-fg{stroke:url(#goldGrad);stroke-linecap:round;transition:.8s}
 .progress-ring .pct{
-  position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-weight:700;color:var(--t1);
+  position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:20px;font-weight:700;color:var(--t1);
 }
 .progress-card-label{font-size:11px;color:var(--t3);margin-bottom:4px}
 .progress-card-sub{font-size:11px;color:var(--t2);margin-top:8px}
@@ -191,7 +224,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
-.page-title{font-size:24px;font-weight:700;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+.page-title{font-family:var(--serif);font-size:28px;font-weight:700;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;color:var(--t1)}
 .page-title .wave{display:inline-block;animation:wave 1.5s ease-in-out 1}
 @keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(15deg)}75%{transform:rotate(-10deg)}}
 .page-sub{font-size:13px;color:var(--t3);margin-top:3px}
@@ -204,10 +237,11 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 }
 .btn:hover{border-color:var(--accent);background:var(--aglow2)}
 .btn-pri{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;border-color:transparent;box-shadow:0 4px 14px var(--aglow);
+  background:var(--gold-grad);
+  color:#1a1308;border-color:transparent;box-shadow:0 4px 14px var(--aglow),inset 0 1px 0 rgba(255,255,255,.4);
+  font-weight:700;
 }
-.btn-pri:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--aglow);background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.btn-pri:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--aglow),inset 0 1px 0 rgba(255,255,255,.4);background:var(--gold-grad)}
 .btn-ghost{background:transparent}
 
 /* ===== Stat Cards ===== */
@@ -225,7 +259,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .stat-trend{font-size:11px;font-weight:600;display:flex;align-items:center;gap:3px}
 .stat-trend.up{color:var(--green)}
 .stat-trend.down{color:var(--red)}
-.stat-num{font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--t1)}
+.stat-num{font-family:var(--serif);font-size:32px;font-weight:700;letter-spacing:-1px;color:var(--t1)}
 .stat-label{font-size:12px;color:var(--t3);margin-top:3px}
 
 /* color variants */
@@ -253,11 +287,11 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .period-info-h{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:2px}
 .period-info-d{font-size:12px;color:var(--t3);margin-bottom:8px}
 .period-bar{height:6px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:6px}
-.period-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.6s}
+.period-bar-fill{height:100%;border-radius:99px;background:var(--gold-grad);transition:.6s}
 .period-card.p-weekly .period-bar-fill{background:linear-gradient(90deg,var(--green),#34d399)}
 .period-card.p-monthly .period-bar-fill{background:linear-gradient(90deg,var(--purple),var(--accent2))}
 .period-card.p-overdue .period-bar-fill{background:linear-gradient(90deg,var(--red),#fb7185)}
-.period-num{font-size:22px;font-weight:700;color:var(--t1)}
+.period-num{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--t1)}
 .period-num small{font-size:13px;color:var(--t3);font-weight:500}
 .period-pending{
   text-align:center;padding:10px 16px;background:var(--bg3);border-radius:10px;min-width:80px;
@@ -349,8 +383,9 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 .contact:hover{background:var(--card)}
 .contact.active{background:var(--aglow2)}
 .contact-av{
-  width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--cyan));
-  display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;
+  width:38px;height:38px;border-radius:10px;background:var(--gold-grad);
+  display:grid;place-items:center;color:#1a1308;font-weight:700;font-size:13px;flex-shrink:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
 }
 .contact-info{flex:1;min-width:0}
 .contact-phone{font-size:13px;font-weight:600;color:var(--t1)}
@@ -364,7 +399,7 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 
 .chat-main{display:flex;flex-direction:column;background:var(--bg);min-height:0}
 .chat-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--card);flex-shrink:0}
-.chat-head-av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.chat-head-av{width:36px;height:36px;border-radius:10px;background:var(--gold-grad);display:grid;place-items:center;color:#1a1308;font-weight:700;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .chat-head-name{font-size:14px;font-weight:600}
 .chat-head-sub{font-size:11px;color:var(--t3)}
 .chat-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;min-height:0}
@@ -373,8 +408,8 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 .bubble-wrap.in{align-self:flex-start}
 .bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word}
 .in .bubble{background:var(--card2);color:var(--t1);border-radius:14px 14px 14px 3px}
-.out .bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:14px 14px 3px 14px}
-.bubble-btn{background:var(--aglow2)!important;border:1px solid var(--aglow);color:var(--accent2)!important}
+.out .bubble{background:var(--gold-grad);color:#1a1308;border-radius:14px 14px 3px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.bubble-btn{background:var(--aglow2)!important;border:1px solid var(--accent3);color:var(--accent)!important}
 .bubble-time{font-size:10px;color:var(--t3);padding:0 2px}
 .chat-empty-state{display:grid;place-items:center;height:100%;color:var(--t3);text-align:center;gap:10px}
 
@@ -410,20 +445,111 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 *::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
 *::-webkit-scrollbar-thumb:hover{background:var(--border3)}
 
+/* ===== Mobile Menu Toggle ===== */
+.mobile-menu-btn{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;align-items:center;justify-content:center;margin-right:10px}
+
 /* ===== Responsive ===== */
-@media(max-width:880px){
-  .sidebar{position:absolute;left:-240px;top:62px;height:calc(100vh - 62px);transition:.25s;z-index:30}
-  .sidebar.open{left:0}
-  .tbar-search{display:none}
-  .chat-app{grid-template-columns:1fr}
-  .chat-sidebar.hide-mobile{display:none}
+@media(max-width:1024px){
+  .tbar-search{max-width:300px}
+  .stats-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 }
+
+@media(max-width:880px){
+  .topbar{padding:0 14px;height:56px}
+  .tbar-logo{margin-right:0;flex:1;min-width:0}
+  .logo-label{font-size:14px}
+  .logo-sub{font-size:8px}
+  .tbar-search{display:none}
+  .mobile-menu-btn{display:grid}
+  .profile-info{display:none}
+  .profile-chip{padding:5px}
+  .icon-btn{width:36px;height:36px}
+
+  .app{height:calc(100vh - 56px)}
+
+  .sidebar{
+    position:fixed;left:-260px;top:56px;height:calc(100vh - 56px);width:250px;
+    transition:left .25s ease;z-index:40;box-shadow:var(--shadow2);
+  }
+  .sidebar.open{left:0}
+  .sidebar-overlay{
+    display:none;position:fixed;inset:56px 0 0 0;background:rgba(0,0,0,.4);z-index:35;
+  }
+  .sidebar-overlay.show{display:block}
+
+  .main{padding:16px 14px}
+  .page-head{flex-direction:column;align-items:flex-start;gap:12px;margin-bottom:16px}
+  .page-title{font-size:22px}
+  .page-actions{width:100%;flex-wrap:wrap}
+  .page-actions .btn,.page-actions .inp{flex:1;min-width:0}
+  .page-actions .inp{width:auto!important}
+
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+  .stat{padding:14px}
+  .stat-num{font-size:24px}
+  .stat-label{font-size:11px}
+
+  .period-card{
+    grid-template-columns:auto 1fr;gap:12px;padding:14px;
+  }
+  .period-card .period-pending{
+    grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;
+  }
+  .period-pending .pn-label{margin-left:auto}
+  .period-icon{width:46px;height:46px;font-size:20px}
+  .period-info-h{font-size:14px}
+  .period-num{font-size:22px}
+
+  .panel-head{padding:14px}
+  .task-grid{padding:10px;gap:6px}
+  .task-row{
+    grid-template-columns:auto 1fr auto;
+    gap:10px;padding:10px;
+  }
+  .task-row .task-priority,.task-row .task-status-pill{display:none}
+  .task-row .task-meta{font-size:10px}
+  .task-row .task-meta .pill{font-size:9px;padding:2px 6px}
+  .task-name{font-size:13px}
+
+  .tabs{overflow-x:auto;width:100%;flex-wrap:nowrap}
+  .tab{flex-shrink:0;font-size:11px;padding:7px 12px}
+
+  .chat-app{grid-template-columns:1fr}
+  .chat-sidebar{display:none}
+  .chat-sidebar.show-mobile{display:flex}
+  .chat-main{display:none}
+  .chat-main.show-mobile{display:flex}
+  .back-to-contacts{display:flex!important}
+
+  .modal{width:94vw;padding:18px;max-height:90vh;overflow-y:auto}
+  .modal h3{font-size:16px}
+
+  .profile-pop{right:10px;width:calc(100vw - 20px);max-width:300px}
+}
+
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .stat-num{font-size:20px}
+  .page-title{font-size:20px}
+  .logo-sub{display:none}
+}
+
+/* ===== iOS safe area ===== */
+@supports(padding:max(0px)){
+  body{padding-bottom:env(safe-area-inset-bottom)}
+}
+
+/* ===== Back button for mobile chat ===== */
+.back-to-contacts{display:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;align-items:center;justify-content:center;margin-right:6px}
 </style>
 </head>
 <body>
 
 <!-- Topbar -->
 <div class="topbar">
+  <button class="mobile-menu-btn" onclick="toggleSidebar()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="tbar-logo" onclick="goSection('overview')">
     <div class="logo-gem">N</div>
     <div>
@@ -488,6 +614,8 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 <!-- App -->
 <div class="app">
 
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-inner">
@@ -531,6 +659,13 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
         <div class="progress-card-label">Overall Progress</div>
         <div class="progress-ring">
           <svg width="80" height="80">
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#b8860b"/>
+                <stop offset="50%" stop-color="#d4af37"/>
+                <stop offset="100%" stop-color="#f4d160"/>
+              </linearGradient>
+            </defs>
             <circle class="ring-bg" cx="40" cy="40" r="34"/>
             <circle class="ring-fg" cx="40" cy="40" r="34" id="ringFg" stroke-dasharray="213" stroke-dashoffset="213"/>
           </svg>
@@ -666,7 +801,7 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
           <div class="contacts" id="contacts"><div class="empty" style="padding:24px;font-size:12px">No contacts yet</div></div>
         </aside>
         <div class="chat-main">
-          <div class="chat-head" id="chatHead"><div style="color:var(--t3);font-size:13px">Select a conversation</div></div>
+          <div class="chat-head" id="chatHead"><button class="back-to-contacts" onclick="backToContacts()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div style="color:var(--t3);font-size:13px">Select a conversation</div></div>
           <div class="chat-msgs" id="chatMsgs">
             <div class="chat-empty-state">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -721,7 +856,7 @@ function toggleTheme(){
   localStorage.setItem('theme',nxt);
 }
 (function(){
-  const saved=localStorage.getItem('theme')||'dark';
+  const saved=localStorage.getItem('theme')||'light';
   document.documentElement.setAttribute('data-theme',saved);
 })();
 
@@ -779,6 +914,26 @@ function goSection(name){
   if(name==='daily')renderPeriod('daily','dailyTasks');
   if(name==='weekly')renderPeriod('weekly','weeklyTasks');
   if(name==='monthly')renderPeriod('monthly','monthlyTasks');
+  // Reset chat mobile view when navigating away
+  if(name==='chats'){
+    document.querySelector('.chat-sidebar').classList.add('show-mobile');
+    document.querySelector('.chat-main').classList.remove('show-mobile');
+  }
+  // Close mobile sidebar
+  closeSidebar();
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+function backToContacts(){
+  document.querySelector('.chat-sidebar').classList.add('show-mobile');
+  document.querySelector('.chat-main').classList.remove('show-mobile');
 }
 
 // ===== API =====
@@ -977,8 +1132,11 @@ function filterContacts(){
 }
 async function selectContact(phone){
   selectedPhone=phone;renderContacts(allContacts);
+  // Mobile: switch to chat view
+  document.querySelector('.chat-sidebar').classList.remove('show-mobile');
+  document.querySelector('.chat-main').classList.add('show-mobile');
   const hd=document.getElementById('chatHead');
-  hd.innerHTML=`<div class="chat-head-av">${phone.slice(-2).toUpperCase()}</div><div><div class="chat-head-name">+${phone}</div><div class="chat-head-sub">Loading…</div></div>`;
+  hd.innerHTML=`<button class="back-to-contacts" onclick="backToContacts()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="chat-head-av">${phone.slice(-2).toUpperCase()}</div><div><div class="chat-head-name">+${phone}</div><div class="chat-head-sub">Loading…</div></div>`;
   try{
     const d=await api(`/api/chats?phone=${phone}`);
     const msgs=[...(d.chats||[])].reverse();
