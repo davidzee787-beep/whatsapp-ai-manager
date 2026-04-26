@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Niksol AI — Personal Manager</title>
+<title>Muhammad Daud Zia — Personal Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -184,7 +184,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .progress-card-sub{font-size:11px;color:var(--t2);margin-top:8px}
 
 /* ===== Main ===== */
-.main{flex:1;overflow-y:auto;background:var(--bg);padding:24px 28px}
+.main{flex:1;overflow-y:auto;background:var(--bg);padding:24px 28px;min-height:0}
+.main:has(#sec-chats.active){overflow:hidden}
 .section{display:none}
 .section.active{display:block;animation:fade .25s}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -335,10 +336,12 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 @media(max-width:900px){.add-form-grid{grid-template-columns:1fr}}
 
 /* ===== Chat Layout ===== */
-.chat-app{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 62px - 48px);background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg2)}
-.chat-search-wrap{padding:14px;border-bottom:1px solid var(--border)}
-.contacts{flex:1;overflow-y:auto}
+#sec-chats.active{display:flex;flex-direction:column;height:calc(100vh - 62px - 48px);min-height:0}
+#sec-chats .page-head{flex-shrink:0}
+.chat-app{display:grid;grid-template-columns:300px 1fr;flex:1;min-height:0;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg2);min-height:0}
+.chat-search-wrap{padding:14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.contacts{flex:1;overflow-y:auto;min-height:0}
 .contact{
   display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;
   border-bottom:1px solid var(--border);transition:.15s;position:relative;
@@ -359,12 +362,12 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
 .contact:hover .contact-del{opacity:1}
 .contact-del:hover{background:var(--red2);color:var(--red)}
 
-.chat-main{display:flex;flex-direction:column;background:var(--bg)}
-.chat-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--card)}
+.chat-main{display:flex;flex-direction:column;background:var(--bg);min-height:0}
+.chat-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--card);flex-shrink:0}
 .chat-head-av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
 .chat-head-name{font-size:14px;font-weight:600}
 .chat-head-sub{font-size:11px;color:var(--t3)}
-.chat-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.chat-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;min-height:0}
 .bubble-wrap{display:flex;flex-direction:column;gap:3px;max-width:72%}
 .bubble-wrap.out{align-self:flex-end;align-items:flex-end}
 .bubble-wrap.in{align-self:flex-start}
@@ -424,8 +427,8 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
   <div class="tbar-logo" onclick="goSection('overview')">
     <div class="logo-gem">N</div>
     <div>
-      <div class="logo-label">Niksol AI</div>
-      <div class="logo-sub">PERSONAL MANAGER</div>
+      <div class="logo-label">Muhammad Daud Zia</div>
+      <div class="logo-sub">PERSONAL ASSISTANT</div>
     </div>
   </div>
 
@@ -655,7 +658,7 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
     </section>
 
     <!-- ====== CHATS ====== -->
-    <section class="section" id="sec-chats" style="padding-bottom:24px">
+    <section class="section" id="sec-chats">
       <div class="page-head"><div><h1 class="page-title">Messages</h1><div class="page-sub">WhatsApp conversations powered by Claude</div></div></div>
       <div class="chat-app">
         <aside class="chat-sidebar">

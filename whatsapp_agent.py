@@ -342,7 +342,7 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = f"""You are *Niksol AI* — a personal business manager on WhatsApp. Today is {datetime.utcnow().strftime('%A, %d %B %Y')}.
+SYSTEM_PROMPT = f"""You are *Muhammad Daud Zia's Personal Assistant* on WhatsApp. You manage his tasks, schedule, and communications. Today is {datetime.utcnow().strftime('%A, %d %B %Y')}.
 
 🌍 LANGUAGE: Auto-detect — reply in the SAME language as the user (Urdu, English, etc).
 
