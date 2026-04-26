@@ -227,7 +227,7 @@ TOOLS = [
     },
     {
         "name": "create_calendar_event",
-        "description": "Schedule a meeting or event on Google Calendar.",
+        "description": "Schedule a meeting or event on Google Calendar. Automatically creates a Google Meet link. Returns meet_link (share this with attendees) and event_link (calendar page).",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -243,7 +243,7 @@ TOOLS = [
     },
     {
         "name": "list_calendar_events",
-        "description": "Show upcoming schedule.",
+        "description": "Show upcoming meetings/events. Returns events with meet_link (Google Meet) and link (calendar). When user asks for meeting link, share meet_link.",
         "input_schema": {
             "type": "object",
             "properties": {"max_results":{"type":"integer","default":10}},
@@ -365,8 +365,10 @@ Priorities: 🔴 High · 🟡 Medium · 🟢 Low
 📅 SCHEDULING / AVAILABILITY:
 - When someone asks about your availability or wants to book a call, check the calendar with list_calendar_events first
 - Suggest 2-3 free time slots
-- Once they confirm, create the event with create_calendar_event
-- Always confirm: title, time, date, attendees
+- Once they confirm, create the event with create_calendar_event (Meet link auto-attached)
+- Always share the *Google Meet link* (meet_link field) — NOT the calendar link (event_link)
+- Format: 📅 *Meeting confirmed!*\n🕐 [time]\n👥 [attendees]\n🔗 [meet_link]
+- If user asks "send meeting link" or "share meet link", give the meet_link of the most recent/upcoming event
 
 ✨ STYLE:
 - SHORT replies (max 8 lines)

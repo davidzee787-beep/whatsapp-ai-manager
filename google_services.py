@@ -337,27 +337,51 @@ def create_calendar_event(
     description: str = "",
     attendees: Optional[list] = None,
     location: str = "",
+    add_meet: bool = True,
 ) -> dict:
+    import uuid
     calendar_id = os.environ.get("GOOGLE_CALENDAR_ID", "primary")
     event = {
         "summary": title,
         "description": description,
-        "start": {"dateTime": start_datetime, "timeZone": "UTC"},
-        "end":   {"dateTime": end_datetime,   "timeZone": "UTC"},
+        "start": {"dateTime": start_datetime, "timeZone": "Asia/Karachi"},
+        "end":   {"dateTime": end_datetime,   "timeZone": "Asia/Karachi"},
     }
     if location:
         event["location"] = location
     if attendees:
         event["attendees"] = [{"email": e} for e in attendees]
 
+    # Auto-attach Google Meet link
+    if add_meet:
+        event["conferenceData"] = {
+            "createRequest": {
+                "requestId": str(uuid.uuid4()),
+                "conferenceSolutionKey": {"type": "hangoutsMeet"},
+            }
+        }
+
     try:
         created = _calendar_service().events().insert(
-            calendarId=calendar_id, body=event, sendUpdates="all"
+            calendarId=calendar_id,
+            body=event,
+            sendUpdates="all",
+            conferenceDataVersion=1 if add_meet else 0,
         ).execute()
+
+        # Extract Meet link
+        meet_link = created.get("hangoutLink", "")
+        if not meet_link:
+            for ep in (created.get("conferenceData", {}).get("entryPoints") or []):
+                if ep.get("entryPointType") == "video":
+                    meet_link = ep.get("uri", "")
+                    break
+
         return {
             "success":    True,
             "event_id":   created["id"],
             "event_link": created.get("htmlLink", ""),
+            "meet_link":  meet_link,
             "title":      created["summary"],
             "start":      created["start"]["dateTime"],
             "end":        created["end"]["dateTime"],
@@ -390,6 +414,8 @@ def list_calendar_events(max_results: int = 10, time_min: Optional[str] = None) 
                     "end":         e["end"].get("dateTime",   e["end"].get("date")),
                     "description": e.get("description", ""),
                     "link":        e.get("htmlLink", ""),
+                    "meet_link":   e.get("hangoutLink", ""),
+                    "location":    e.get("location", ""),
                 }
                 for e in result.get("items", [])
             ],
