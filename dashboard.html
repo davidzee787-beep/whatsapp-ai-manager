@@ -514,12 +514,15 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
   .tabs{overflow-x:auto;width:100%;flex-wrap:nowrap}
   .tab{flex-shrink:0;font-size:11px;padding:7px 12px}
 
-  .chat-app{grid-template-columns:1fr}
-  .chat-sidebar{display:none}
+  .chat-app{grid-template-columns:1fr;height:calc(100vh - 56px - 100px)}
+  .chat-sidebar{display:none;height:100%}
   .chat-sidebar.show-mobile{display:flex}
-  .chat-main{display:none}
+  .chat-main{display:none;height:100%}
   .chat-main.show-mobile{display:flex}
+  .chat-msgs{padding:12px;-webkit-overflow-scrolling:touch}
+  .bubble-wrap{max-width:85%}
   .back-to-contacts{display:flex!important}
+  #sec-chats.active{height:auto;flex:1;min-height:calc(100vh - 56px - 16px)}
 
   .modal{width:94vw;padding:18px;max-height:90vh;overflow-y:auto}
   .modal h3{font-size:16px}
@@ -796,7 +799,7 @@ select.inp{cursor:pointer;padding-right:30px;-webkit-appearance:none;appearance:
     <section class="section" id="sec-chats">
       <div class="page-head"><div><h1 class="page-title">Messages</h1><div class="page-sub">WhatsApp conversations powered by Claude</div></div></div>
       <div class="chat-app">
-        <aside class="chat-sidebar">
+        <aside class="chat-sidebar show-mobile">
           <div class="chat-search-wrap"><input class="inp" id="contactSearch" placeholder="Search contacts…" oninput="filterContacts()"/></div>
           <div class="contacts" id="contacts"><div class="empty" style="padding:24px;font-size:12px">No contacts yet</div></div>
         </aside>

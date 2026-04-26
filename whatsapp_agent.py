@@ -3,12 +3,13 @@ Personal WhatsApp AI Manager — powered by Claude + Supabase
 Supports: Text, Images, Documents, Voice Notes, Any Language
 Memory: Supabase (persistent conversation history)
 """
-import os, json, io, base64, requests, anthropic
+import os, json, io, base64, threading, requests, anthropic
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import datetime
 from typing import Any
+from collections import OrderedDict
 
 load_dotenv()
 
@@ -120,49 +121,57 @@ def handle_image(phone: str, msg: dict) -> str:
         content, mime = download_wa_media(msg["image"]["id"])
         if mime not in ("image/jpeg","image/png","image/gif","image/webp"):
             mime = "image/jpeg"
-        caption = msg["image"].get("caption","")
+        caption = (msg["image"].get("caption","") or "").strip()
+        instruction = caption if caption else "Briefly describe what you see (1 line) then ask what they want done with it (extract text, explain, identify, etc). DO NOT do a long analysis until they ask."
         parts = [
             {"type":"image","source":{"type":"base64","media_type":mime,"data":base64.b64encode(content).decode()}},
-            {"type":"text","text": caption or "What's in this image? Be detailed and helpful."},
+            {"type":"text","text": instruction},
         ]
         return ask_claude(phone, parts)
     except Exception as e:
-        return f"❌ Couldn't read image: {e}"
+        return "❌ Couldn't read the image. Please try sending it again."
 
 def handle_document(phone: str, msg: dict) -> str:
     doc      = msg["document"]
     filename = doc.get("filename","document")
     mime     = doc.get("mime_type","")
+    caption  = (doc.get("caption","") or "").strip()
     try:
         content, mime_type = download_wa_media(doc["id"])
         if "pdf" in mime.lower() or filename.lower().endswith(".pdf"):
             if not PDF_OK:
-                return "📄 PDF support not installed. Run: pip install pdfplumber"
+                return "📄 PDF support not available right now."
             with pdfplumber.open(io.BytesIO(content)) as pdf:
+                pages = pdf.pages
+                page_count = len(pages)
                 text = "\n\n".join(
                     f"[Page {i+1}]\n{(p.extract_text() or '').strip()}"
-                    for i, p in enumerate(pdf.pages) if p.extract_text()
+                    for i, p in enumerate(pages) if p.extract_text()
                 )
             if not text.strip():
-                return f"📄 *{filename}* — couldn't extract text (may be a scanned PDF)."
-            parts = [{"type":"text","text":f"Document: *{filename}*\n\n{text[:6000]}\n\nSummarise and help with this."}]
+                return f"📄 *{filename}* — I couldn't extract text. This might be a scanned PDF (image-only)."
+            # Pass content + filename + page count + caption so Claude can give brief intro
+            user_instruction = caption if caption else "Briefly describe what this document is (1 sentence) then ask the user what they want done with it. DO NOT summarize unless they ask."
+            parts = [{"type":"text","text":f"📄 PDF received: *{filename}* ({page_count} pages)\n\nContent preview:\n{text[:5000]}\n\n---\nUser instruction: {user_instruction}"}]
             return ask_claude(phone, parts)
         elif "image" in mime.lower():
             if mime_type not in ("image/jpeg","image/png","image/gif","image/webp"):
                 mime_type = "image/jpeg"
+            user_instruction = caption if caption else "Briefly describe what this image shows (1 sentence) then ask what they want done with it."
             parts = [
                 {"type":"image","source":{"type":"base64","media_type":mime_type,"data":base64.b64encode(content).decode()}},
-                {"type":"text","text":f"Document image: '{filename}'. What does it say or show?"},
+                {"type":"text","text":f"📎 Document image: *{filename}*\n\n{user_instruction}"},
             ]
             return ask_claude(phone, parts)
         elif "text" in mime.lower():
             text  = content.decode("utf-8", errors="ignore")[:5000]
-            parts = [{"type":"text","text":f"File: *{filename}*\n\n{text}\n\nAnalyse this."}]
+            user_instruction = caption if caption else "Briefly describe what this file contains and ask what they want done with it."
+            parts = [{"type":"text","text":f"📄 Text file: *{filename}*\n\n{text}\n\n---\n{user_instruction}"}]
             return ask_claude(phone, parts)
         else:
-            return f"📎 Received *{filename}* but can't read this file type yet.\n\nI support: PDFs, Images, Text files."
+            return f"📎 Got *{filename}* but I can't read this file type yet (supported: PDF, images, text)."
     except Exception as e:
-        return f"❌ Couldn't read document: {e}"
+        return f"❌ Couldn't read the document. Please try sending it again."
 
 def handle_audio(phone: str, msg: dict) -> str:
     if not WHISPER_OK:
@@ -342,44 +351,64 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = f"""You are *Muhammad Daud Zia's Personal Assistant* on WhatsApp. You manage his tasks, schedule, and communications. Today is {datetime.utcnow().strftime('%A, %d %B %Y')}.
+SYSTEM_PROMPT = f"""You are *Muhammad Daud Zia's Personal Assistant* on WhatsApp. Today: {datetime.utcnow().strftime('%A, %d %B %Y')}.
 
-🌍 LANGUAGE: Auto-detect — reply in the SAME language as the user (Urdu, English, etc).
+LANGUAGE: Reply in the SAME language the user writes (English, Urdu, Roman Urdu, Hinglish, etc). Detect each message individually.
 
-⚡ CORE BEHAVIOUR:
-1. Be ACTION-ORIENTED — don't ask, just DO. If user asks for tasks → call get_tasks → show them. If user says "add task X" → call add_task immediately.
-2. NEVER send the same button menu twice in a row. Buttons only when truly needed (first message, or to clarify ambiguity).
-3. When user asks "tasks", "what to do today/this week/this month" — call get_tasks and FILTER by date yourself. Show actual task list.
-4. When user asks "daily" → today's tasks. "Weekly" → next 7 days. "Monthly" → this month.
-5. After completing an action, give a SHORT confirmation (1-2 lines). Don't repeat menus.
+CORE RULES:
+1. Be DIRECT — execute requests, don't ask permission. "show tasks" → call get_tasks immediately.
+2. NO repeated button menus. Buttons only on first contact OR when truly ambiguous.
+3. Don't say "I'll do X" — just do it and confirm.
+4. Keep replies SHORT (3-6 lines max). Long replies only when explaining things in detail.
+5. Use clean formatting — single blank line between sections, no excessive emojis.
 
-📋 TASK FORMAT (when listing):
-*1. Task Name* 🔴
-   📅 Due: 2026-04-28 · 📋 To Do
-*2. Another Task* 🟡
-   📅 Due: 2026-04-30 · 🔄 In Progress
+DOCUMENT/IMAGE HANDLING:
+- When you receive an image or document, FIRST briefly say what it is (1 line), then ASK what they want done with it (summarize, extract key points, translate, answer questions, etc).
+- Example: "Got it — *O1-FFA.pdf* (Financial Accounting study material, 3 pages). What would you like? Summary, key concepts, or specific topic explanation?"
+- Wait for user's instruction. DON'T auto-summarize unless they say so.
+- If they previously sent the same document, DON'T re-summarize — answer their new question using context.
 
-Stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done → ❌ Cancelled
-Priorities: 🔴 High · 🟡 Medium · 🟢 Low
+TASK QUERIES:
+- "today/daily" → get_tasks(period="today")
+- "this week/weekly" → get_tasks(period="week")
+- "this month/monthly" → get_tasks(period="month")
+- "overdue" → get_tasks(period="overdue")
+- "all" → get_tasks() with no filter
 
-📅 SCHEDULING / AVAILABILITY:
-- When someone asks about your availability or wants to book a call, check the calendar with list_calendar_events first
-- Suggest 2-3 free time slots
-- Once they confirm, create the event with create_calendar_event (Meet link auto-attached)
-- Always share the *Google Meet link* (meet_link field) — NOT the calendar link (event_link)
-- Format: 📅 *Meeting confirmed!*\n🕐 [time]\n👥 [attendees]\n🔗 [meet_link]
-- If user asks "send meeting link" or "share meet link", give the meet_link of the most recent/upcoming event
+TASK LIST FORMAT (clean, no extra spacing):
+*Today's Tasks (3)*
 
-✨ STYLE:
-- SHORT replies (max 8 lines)
-- Use *bold*, _italic_, emojis sparingly but effectively
-- Be warm, professional, and helpful
-- Never say "I'll send you a menu" — just send actions/info directly
+🔴 *Client meeting prep*
+   Due today · 📋 To Do
 
-🚫 DO NOT:
-- Send button menus repeatedly without context
-- Ask "what would you like to do?" if the user already told you
-- Use generic phrases — be specific to their request"""
+🟡 *Review proposal*
+   Due today · 🔄 In Progress
+
+Stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done
+Priority: 🔴 High · 🟡 Medium · 🟢 Low
+
+CALENDAR / MEETINGS:
+- For booking: check list_calendar_events for conflicts → suggest 2-3 slots → after confirmation call create_calendar_event
+- ALWAYS share `meet_link` (Google Meet), NOT `event_link`
+- Format after booking:
+  📅 *Meeting booked*
+  🕐 Tomorrow, 27 April · 2:00 PM
+  👥 Daud + you
+  🔗 https://meet.google.com/abc-defg-hij
+
+- If `meet_link` is empty (calendar error), say: "Meeting saved. I'll send the Meet link separately."
+- Never invent meet links.
+
+OUTGOING IDENTITY:
+- You are Daud's assistant. When clients/visitors message, introduce: "Hi! I'm Daud's assistant — how can I help?"
+- Schedule on his behalf using calendar tools. Confirm everything before booking.
+
+DON'T:
+- Apologize repeatedly
+- Use phrases like "calendar mein issue hai" — just say "let me try again" and retry
+- Send the same response twice
+- Use more than 3 emojis per message
+- Add unnecessary line breaks"""
 
 # ---------------------------------------------------------------------------
 # Claude agent loop
@@ -485,8 +514,43 @@ def ask_claude(phone: str, content: list) -> str:
         history.append({"role":"user","content":tool_results})
 
 # ---------------------------------------------------------------------------
+# Deduplication — Meta retries webhook if response > 10s, this prevents double processing
+# ---------------------------------------------------------------------------
+_processed_ids: OrderedDict[str, float] = OrderedDict()
+_dedup_lock = threading.Lock()
+def is_duplicate(msg_id: str) -> bool:
+    if not msg_id: return False
+    now = datetime.utcnow().timestamp()
+    with _dedup_lock:
+        # Clean entries older than 10 minutes
+        cutoff = now - 600
+        for k in list(_processed_ids.keys()):
+            if _processed_ids[k] < cutoff: _processed_ids.pop(k, None)
+            else: break
+        if msg_id in _processed_ids: return True
+        _processed_ids[msg_id] = now
+        # Cap at 1000 entries
+        while len(_processed_ids) > 1000: _processed_ids.popitem(last=False)
+    return False
+
+# ---------------------------------------------------------------------------
 # WhatsApp senders
 # ---------------------------------------------------------------------------
+def mark_read_and_typing(message_id: str):
+    """Mark message as read and show typing indicator."""
+    if not message_id: return
+    headers = {"Authorization":f"Bearer {WHATSAPP_TOKEN}","Content-Type":"application/json"}
+    payload = {
+        "messaging_product":"whatsapp",
+        "status":"read",
+        "message_id":message_id,
+        "typing_indicator":{"type":"text"},
+    }
+    try:
+        requests.post(GRAPH_URL, headers=headers, json=payload, timeout=5)
+    except Exception as e:
+        print(f"⚠️ Typing indicator failed: {e}")
+
 def send_text(to: str, text: str):
     _wa_post(to, {"type":"text","text":{"body":text}})
 
@@ -519,6 +583,51 @@ def home():
 def css():
     return send_from_directory(".", "dashboard.css")
 
+def process_message_async(msg: dict, from_num: str, msg_type: str):
+    """Process message in background thread so webhook can return 200 quickly."""
+    try:
+        msg_id = msg.get("id","")
+        # Show typing indicator
+        mark_read_and_typing(msg_id)
+
+        if msg_type == "text":
+            ut = msg["text"]["body"]
+            log_chat(from_num,"IN",ut,"text")
+            reply = handle_text(from_num, ut)
+        elif msg_type == "image":
+            cap = msg['image'].get('caption','').strip()
+            log_chat(from_num,"IN",f"[Image] {cap}","image")
+            reply = handle_image(from_num, msg)
+        elif msg_type == "document":
+            fn = msg['document'].get('filename','document')
+            log_chat(from_num,"IN",f"[Doc] {fn}","document")
+            reply = handle_document(from_num, msg)
+        elif msg_type == "audio":
+            log_chat(from_num,"IN","[Voice note]","audio")
+            reply = handle_audio(from_num, msg)
+        elif msg_type == "interactive":
+            iv = msg.get("interactive",{})
+            if iv.get("type") == "button_reply":
+                bt = iv["button_reply"]["title"]
+                log_chat(from_num,"IN",bt,"button")
+                reply = handle_text(from_num, bt)
+            else: return
+        elif msg_type == "sticker":
+            reply = ask_claude(from_num,[{"type":"text","text":"User sent a sticker — reply briefly and warmly."}])
+        else:
+            reply = f"I received your {msg_type}. How can I help?"
+
+        if reply:
+            send_text(from_num, reply)
+            log_chat(from_num,"OUT",reply,"text")
+    except Exception as e:
+        import traceback
+        print(f"⚠️ Process error: {e}")
+        print(traceback.format_exc())
+        try: send_text(from_num, "Sorry, something went wrong. Please try again. 🙏")
+        except: pass
+
+
 @app.route("/webhook", methods=["GET","POST"])
 def webhook():
     if request.method == "GET":
@@ -532,41 +641,20 @@ def webhook():
         value = entry[0].get("changes", [{}])[0].get("value", {})
         if "messages" not in value: return jsonify({"status":"ok"}),200
         msg      = value["messages"][0]
+        msg_id   = msg.get("id","")
         from_num = msg["from"]
         msg_type = msg.get("type","")
-        print(f"\n📩 [{msg_type}] from {from_num}")
 
-        if msg_type == "text":
-            ut = msg["text"]["body"]
-            log_chat(from_num,"IN",ut,"text")
-            reply = handle_text(from_num, ut)
-        elif msg_type == "image":
-            log_chat(from_num,"IN",f"[Image] {msg['image'].get('caption','')}","image")
-            send_text(from_num,"🖼️ Reading your image...")
-            reply = handle_image(from_num, msg)
-        elif msg_type == "document":
-            log_chat(from_num,"IN",f"[Doc] {msg['document'].get('filename','')}","document")
-            send_text(from_num,f"📄 Reading *{msg['document'].get('filename','document')}*...")
-            reply = handle_document(from_num, msg)
-        elif msg_type == "audio":
-            log_chat(from_num,"IN","[Voice note]","audio")
-            send_text(from_num,"🎤 Transcribing...")
-            reply = handle_audio(from_num, msg)
-        elif msg_type == "interactive":
-            iv = msg.get("interactive",{})
-            if iv.get("type") == "button_reply":
-                bt = iv["button_reply"]["title"]
-                log_chat(from_num,"IN",bt,"button")
-                reply = handle_text(from_num, bt)
-            else: return jsonify({"status":"ok"}),200
-        elif msg_type == "sticker":
-            reply = ask_claude(from_num,[{"type":"text","text":"The user sent a sticker. Reply playfully!"}])
-        else:
-            reply = f"I received your {msg_type} — I'll support this soon! 😊"
+        # Deduplicate — Meta retries on slow responses
+        if is_duplicate(msg_id):
+            print(f"🔁 Duplicate {msg_type} from {from_num} — skipping")
+            return jsonify({"status":"ok"}),200
 
-        if reply:
-            send_text(from_num, reply)
-            log_chat(from_num,"OUT",reply,"text")
+        print(f"\n📩 [{msg_type}] from {from_num} (id={msg_id[:12]}...)")
+
+        # Process in background — return 200 fast so Meta doesn't retry
+        threading.Thread(target=process_message_async, args=(msg, from_num, msg_type), daemon=True).start()
+
     except Exception as e:
         import traceback
         print(f"⚠️ Webhook error: {e}")
