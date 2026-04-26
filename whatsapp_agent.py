@@ -326,25 +326,33 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
 
     # Calendar — Google only
     if not GOOGLE_OK:
-        return json.dumps({"error": "Google Calendar not configured"})
+        return json.dumps({"error": "Google Calendar not configured. Tell user calendar service is unavailable."})
     try:
         if name == "create_calendar_event":
+            print(f"📅 Creating event: {inp.get('title')} {inp.get('start_datetime')} → {inp.get('end_datetime')}")
             result = gs.create_calendar_event(
                 title=inp["title"], start_datetime=inp["start_datetime"],
                 end_datetime=inp["end_datetime"], description=inp.get("description",""),
                 attendees=inp.get("attendees") or [], location=inp.get("location",""),
             )
+            print(f"📅 Calendar result: {result}")
             if result.get("success"):
-                gs.append_meeting_to_sheet(
-                    title=result["title"], start_datetime=result["start"],
-                    end_datetime=result["end"], attendees=", ".join(inp.get("attendees") or []),
-                    description=inp.get("description",""), event_link=result.get("event_link",""),
-                )
+                try:
+                    gs.append_meeting_to_sheet(
+                        title=result["title"], start_datetime=result["start"],
+                        end_datetime=result["end"], attendees=", ".join(inp.get("attendees") or []),
+                        description=inp.get("description",""), event_link=result.get("event_link",""),
+                    )
+                except Exception as se:
+                    print(f"⚠️ Sheet log failed (non-fatal): {se}")
             return json.dumps(result)
         elif name == "list_calendar_events":
             return json.dumps(gs.list_calendar_events(max_results=inp.get("max_results",10)))
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        import traceback
+        print(f"⚠️ Calendar tool error: {e}")
+        print(traceback.format_exc())
+        return json.dumps({"error": str(e), "hint": "Check service_account.json shared with calendar"})
 
     return json.dumps({"error": f"Unknown tool: {name}"})
 

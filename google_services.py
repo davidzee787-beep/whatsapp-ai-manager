@@ -361,13 +361,26 @@ def create_calendar_event(
             }
         }
 
-    try:
-        created = _calendar_service().events().insert(
+    def _try_insert(evt, send="all"):
+        return _calendar_service().events().insert(
             calendarId=calendar_id,
-            body=event,
-            sendUpdates="all",
+            body=evt,
+            sendUpdates=send,
             conferenceDataVersion=1 if add_meet else 0,
         ).execute()
+
+    try:
+        try:
+            created = _try_insert(event, send="all")
+        except HttpError as he:
+            err_text = str(he).lower()
+            # Service accounts can't invite attendees without Domain-Wide Delegation
+            if "forbiddenforservice" in err_text or "without domain wide delegation" in err_text or "service accounts cannot invite" in err_text:
+                print("⚠️ Service account cannot invite attendees — retrying without attendees")
+                event.pop("attendees", None)
+                created = _try_insert(event, send="none")
+            else:
+                raise
 
         # Extract Meet link
         meet_link = created.get("hangoutLink", "")
