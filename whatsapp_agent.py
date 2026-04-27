@@ -576,16 +576,33 @@ Priority: 🔴 High · 🟡 Medium · 🟢 Low
 Stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done
 
 CALENDAR BOOKING FLOW:
-Collect these ONE AT A TIME (not all at once):
+
+BUSINESS HOURS RULE:
+- Bookings are ONLY allowed between 9:00 AM and 5:00 PM Pakistan Standard Time (PKT).
+- If user requests a time outside 9 AM – 5 PM PKT, politely say:
+  "My booking hours are 9:00 AM to 5:00 PM PKT. How about [suggest 2-3 slots within business hours that day or next available day]?"
+- Last booking can start at 4:00 PM (so a 1-hour meeting fits before 5 PM). For 30-min meetings last start is 4:30 PM.
+
+ALWAYS CHECK AVAILABILITY FIRST:
+Before EVERY booking, you MUST call list_calendar_events first to check for conflicts.
+- If the requested slot is already booked, suggest the next 2-3 free slots within business hours.
+- Show 30-min increments (9:00, 9:30, 10:00, ...) when suggesting.
+
+Collect info ONE AT A TIME (not all at once):
 
 STEP 1 — Who: "Sure! Who is the call with?"
 STEP 2 — Title/topic (if not given): "What is the meeting about?"
-STEP 3 — Date/time (if not given): "What time works for you?"
+STEP 3 — Date/time (if not given): "What time works for you?" (remind 9 AM-5 PM PKT if needed)
 STEP 4 — Duration: USE send_button_menu tool here!
    body: "How long should the meeting be?"
    buttons: "⏱️ 30 minutes", "🕐 1 hour"
+STEP 5 — Check availability with list_calendar_events. If conflict → suggest alternatives.
+STEP 6 — Book it with create_calendar_event.
 
-If Daud already provides info upfront (e.g. "book 1hr call with Ahmad tomorrow 6pm about crypto"), do not ask again — just confirm and book directly.
+If Daud provides everything upfront (e.g. "book 1hr call with Ahmad tomorrow 11am about crypto"):
+- Still call list_calendar_events first
+- Verify time is within 9-5 PKT
+- Book directly if all good, otherwise propose alternatives
 
 NEVER ask for email or attendees. ALL times are Pakistan Standard Time (PKT, UTC+5).
 
@@ -666,20 +683,25 @@ GREETING (hi/hello/salam/hey): Warmly introduce yourself and offer buttons.
 Use send_button_menu with: body="Hi! 👋 I am Daud's assistant. How can I help you today?", buttons: "📅 Book a Meeting", "ℹ️ Learn More", "💬 Send a Message"
 
 MEETING BOOKING (warm, professional, step-by-step flow):
-Collect these 4 things ONE AT A TIME (do not ask all at once):
 
-STEP 1 — Name (if not already given):
-"May I have your name, please? 🙏"
+⏰ BUSINESS HOURS: Daud is only available between 9:00 AM and 5:00 PM Pakistan Standard Time (PKT).
+- If user asks for time outside 9 AM - 5 PM PKT, politely say:
+  "Daud is available between 9 AM and 5 PM PKT. Would [suggest 2-3 alternatives within hours] work for you?"
+- Last bookable start: 4:00 PM (1-hour) or 4:30 PM (30-min).
 
-STEP 2 — Meeting topic/title:
-"What is the meeting about? (e.g., Project discussion, Crypto consultation)"
+🔍 ALWAYS CHECK AVAILABILITY: Before booking, call list_calendar_events to verify the slot is free.
+- If conflict, offer next 2-3 free slots within business hours.
 
-STEP 3 — Preferred date and time:
-"What date and time works best for you? (Pakistan time / PKT)"
+Collect these 4 things ONE AT A TIME (not all at once):
 
+STEP 1 — Name: "May I have your name, please? 🙏"
+STEP 2 — Topic: "What is the meeting about?"
+STEP 3 — Date and time: "What date and time works best? (Daud is available 9 AM - 5 PM PKT)"
 STEP 4 — Duration: USE send_button_menu tool here!
 body: "How long should the meeting be?"
 buttons: "⏱️ 30 minutes", "🕐 1 hour"
+STEP 5 — Verify availability with list_calendar_events. If busy → suggest alternatives.
+STEP 6 — Book with create_calendar_event.
 
 Once you have all 4 → call create_calendar_event:
 - title: use the meeting topic + name (e.g. "Crypto consultation - Ahmad")
@@ -927,18 +949,89 @@ def home():
 def css():
     return send_from_directory(".", "dashboard.css")
 
-def process_message_async(msg: dict, from_num: str, msg_type: str):
-    """Process message in background thread so webhook can return 200 quickly."""
-    try:
-        msg_id = msg.get("id","")
-        # Show typing indicator
-        mark_read_and_typing(msg_id)
+# ---------------------------------------------------------------------------
+# Message batching — wait 20s for additional messages, then reply once
+# ---------------------------------------------------------------------------
+DEBOUNCE_SECONDS = 20
 
-        if msg_type == "text":
-            ut = msg["text"]["body"]
-            log_chat(from_num,"IN",ut,"text")
-            reply = handle_text(from_num, ut)
-        elif msg_type == "image":
+_msg_buffer: dict[str, list[dict]] = {}
+_msg_timers: dict[str, threading.Timer] = {}
+_buffer_lock = threading.Lock()
+
+def queue_or_process(msg: dict, from_num: str, msg_type: str):
+    """Queue text/button replies for batching. Process other types immediately."""
+    msg_id = msg.get("id","")
+    # Always mark as read + show typing right away — user sees we received it
+    mark_read_and_typing(msg_id)
+
+    # Only batch text and button-reply messages — discrete media types process immediately
+    if msg_type == "text" or (msg_type == "interactive" and msg.get("interactive",{}).get("type") == "button_reply"):
+        with _buffer_lock:
+            _msg_buffer.setdefault(from_num, []).append({"msg": msg, "type": msg_type})
+            # Cancel existing timer (if any) and start a fresh one
+            if from_num in _msg_timers:
+                _msg_timers[from_num].cancel()
+            timer = threading.Timer(DEBOUNCE_SECONDS, _flush_batch, args=(from_num,))
+            timer.daemon = True
+            timer.start()
+            _msg_timers[from_num] = timer
+        print(f"⏳ Buffering message from {from_num} ({len(_msg_buffer[from_num])} pending)")
+    else:
+        # Image/document/audio/sticker — process immediately
+        threading.Thread(target=process_message_async, args=(msg, from_num, msg_type), daemon=True).start()
+
+def _flush_batch(phone: str):
+    """Timer callback — combine all buffered messages and send one reply."""
+    with _buffer_lock:
+        items = _msg_buffer.pop(phone, [])
+        _msg_timers.pop(phone, None)
+    if not items:
+        return
+
+    print(f"🔁 Flushing {len(items)} buffered messages from {phone}")
+
+    # Combine all text into one batched input for Claude
+    combined_lines = []
+    for item in items:
+        m = item["msg"]; t = item["type"]
+        if t == "text":
+            txt = (m.get("text",{}) or {}).get("body","").strip()
+            if txt:
+                combined_lines.append(txt)
+                log_chat(phone, "IN", txt, "text")
+        elif t == "interactive":
+            iv = m.get("interactive",{})
+            if iv.get("type") == "button_reply":
+                bt = iv["button_reply"]["title"]
+                combined_lines.append(bt)
+                log_chat(phone, "IN", bt, "button")
+
+    if not combined_lines:
+        return
+
+    # If multiple messages → label them clearly so Claude knows it's a batch
+    if len(combined_lines) > 1:
+        joined = "User sent these messages in sequence — respond to ALL of them in one combined reply:\n" + \
+                 "\n".join(f"  {i+1}. {line}" for i, line in enumerate(combined_lines))
+    else:
+        joined = combined_lines[0]
+
+    try:
+        reply = ask_claude(phone, [{"type":"text","text": joined}])
+        if reply and reply.strip() and reply.strip() not in ("✅", "✔️", "👍"):
+            send_text(phone, reply)
+            log_chat(phone, "OUT", reply, "text")
+    except Exception as e:
+        import traceback
+        print(f"⚠️ Batch flush error: {e}")
+        print(traceback.format_exc())
+        try: send_text(phone, "Sorry, something went wrong. Please try again. 🙏")
+        except: pass
+
+def process_message_async(msg: dict, from_num: str, msg_type: str):
+    """Process media-type message in background thread (no batching for these)."""
+    try:
+        if msg_type == "image":
             cap = msg['image'].get('caption','').strip()
             log_chat(from_num,"IN",f"[Image] {cap}","image")
             reply = handle_image(from_num, msg)
@@ -949,19 +1042,11 @@ def process_message_async(msg: dict, from_num: str, msg_type: str):
         elif msg_type == "audio":
             log_chat(from_num,"IN","[Voice note]","audio")
             reply = handle_audio(from_num, msg)
-        elif msg_type == "interactive":
-            iv = msg.get("interactive",{})
-            if iv.get("type") == "button_reply":
-                bt = iv["button_reply"]["title"]
-                log_chat(from_num,"IN",bt,"button")
-                reply = handle_text(from_num, bt)
-            else: return
         elif msg_type == "sticker":
             reply = ask_claude(from_num,[{"type":"text","text":"User sent a sticker — reply briefly and warmly."}])
         else:
             reply = f"I received your {msg_type}. How can I help?"
 
-        # Only send if there is real text — buttons/menus are sent directly via send_button_menu
         if reply and reply.strip() and reply.strip() not in ("✅", "✔️", "👍"):
             send_text(from_num, reply)
             log_chat(from_num,"OUT",reply,"text")
@@ -997,8 +1082,8 @@ def webhook():
 
         print(f"\n📩 [{msg_type}] from {from_num} (id={msg_id[:12]}...)")
 
-        # Process in background — return 200 fast so Meta doesn't retry
-        threading.Thread(target=process_message_async, args=(msg, from_num, msg_type), daemon=True).start()
+        # Route to batching system — text/buttons get debounced 20s, media processes immediately
+        threading.Thread(target=queue_or_process, args=(msg, from_num, msg_type), daemon=True).start()
 
     except Exception as e:
         import traceback
