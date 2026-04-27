@@ -4,7 +4,17 @@
       "Bash(gh api *)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(ngrok config *)"
+      "Bash(ngrok config *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Bash(cd /d E:\\\\test)",
+      "Bash(python -m py_compile whatsapp_agent.py)",
+      "Bash(python \"E:/test/whatsapp_agent.py\" --check)",
+      "Bash(python -m py_compile \"E:/test/whatsapp_agent.py\")",
+      "Bash(python -m py_compile \"E:/test/google_services.py\")",
+      "Bash(dir \"E:\\\\test\")",
+      "Bash(python -m py_compile \"E:/test/get_token.py\")"
     ]
   }
 }

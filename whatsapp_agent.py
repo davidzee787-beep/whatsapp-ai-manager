@@ -3,12 +3,12 @@ Personal WhatsApp AI Manager — powered by Claude + Supabase
 Supports: Text, Images, Documents, Voice Notes, Any Language
 Memory: Supabase (persistent conversation history)
 """
-import os, json, io, base64, threading, requests, anthropic
+import os, re, json, io, base64, threading, requests, anthropic
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from collections import OrderedDict
 
 load_dotenv()
@@ -22,6 +22,18 @@ VERIFY_TOKEN    = os.environ.get("WHATSAPP_VERIFY_TOKEN", "testwhat")
 ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_KEY      = os.environ.get("OPENAI_API_KEY", "")
 GRAPH_URL       = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
+
+# ---------------------------------------------------------------------------
+# Owner access control
+# ---------------------------------------------------------------------------
+# Only this number gets full access (tasks, calendar, everything)
+# All other numbers = clients → can only book meetings & chat
+OWNER_PHONES = {"923191413828", "3191413828", "03191413828"}  # all formats
+
+def is_owner(phone: str) -> bool:
+    """Check if the sender is the owner (Muhammad Daud Zia)."""
+    clean = phone.strip().lstrip("+")
+    return clean in OWNER_PHONES or clean.endswith("3191413828")
 
 # ---------------------------------------------------------------------------
 # Supabase
@@ -42,6 +54,13 @@ try:
     import google_services as gs
     GOOGLE_OK = True
     print("✅ Google services enabled")
+    # Proactively create all sheets — surfaces any access errors right at startup
+    try:
+        sheet_check = gs.ensure_all_sheets()
+        if not sheet_check.get("success"):
+            print(f"⚠️ Sheets setup warning: {sheet_check.get('error')}")
+    except Exception as _se:
+        print(f"⚠️ Sheets setup error: {_se}")
 except Exception as e:
     gs = None
     GOOGLE_OK = False
@@ -86,10 +105,85 @@ def load_history(phone: str) -> list:
         return history
     return []
 
+def _deep_serialize_history(history: list) -> list:
+    """Walk entire history and convert any Anthropic SDK objects to plain dicts.
+    Belt-and-suspenders safety net so save_conversation never gets SDK objects."""
+    cleaned = []
+    for msg in history:
+        if not isinstance(msg, dict):
+            continue
+        role = msg.get("role")
+        content = msg.get("content", [])
+        if isinstance(content, str):
+            cleaned.append({"role": role, "content": content})
+            continue
+        if not isinstance(content, list):
+            continue
+        new_content = []
+        for block in content:
+            if isinstance(block, dict):
+                new_content.append(block)
+            elif hasattr(block, "type"):
+                t = block.type
+                if t == "text":
+                    new_content.append({"type": "text", "text": getattr(block, "text", "")})
+                elif t == "tool_use":
+                    new_content.append({
+                        "type": "tool_use",
+                        "id":   getattr(block, "id", ""),
+                        "name": getattr(block, "name", ""),
+                        "input":getattr(block, "input", {}),
+                    })
+                elif t == "tool_result":
+                    new_content.append({
+                        "type": "tool_result",
+                        "tool_use_id": getattr(block, "tool_use_id", ""),
+                        "content":     getattr(block, "content", ""),
+                    })
+                else:
+                    new_content.append({"type": t})
+            else:
+                new_content.append({"type": "text", "text": str(block)})
+        cleaned.append({"role": role, "content": new_content})
+    return cleaned
+
 def save_history(phone: str, history: list):
+    # Defensive — make sure no Anthropic SDK objects sneak through
+    history = _deep_serialize_history(history)
     _mem_cache[phone] = history
     if SUPABASE_OK:
-        sb.save_conversation(phone, history)
+        try:
+            sb.save_conversation(phone, history)
+        except Exception as e:
+            print(f"⚠️ Save conversation error: {e} — resetting corrupted history")
+            # Last resort: clear and save empty so next message starts fresh
+            _mem_cache[phone] = []
+            try: sb.save_conversation(phone, [])
+            except: pass
+
+# ---------------------------------------------------------------------------
+# Document buffer — keeps the most recent PDF/file per phone so we can upload to Drive on demand
+# ---------------------------------------------------------------------------
+import time as _time
+_doc_buffer: dict[str, dict] = {}
+
+def store_doc(phone: str, filename: str, content_bytes: bytes, mime: str, text: str, pages: int = 0):
+    _doc_buffer[phone] = {
+        "filename": filename,
+        "bytes":    content_bytes,
+        "mime":     mime,
+        "text":     text,
+        "pages":    pages,
+        "ts":       _time.time(),
+    }
+    # Cleanup entries older than 1 hour
+    cutoff = _time.time() - 3600
+    for k in list(_doc_buffer.keys()):
+        if _doc_buffer[k]["ts"] < cutoff:
+            _doc_buffer.pop(k, None)
+
+def get_doc(phone: str) -> Optional[dict]:
+    return _doc_buffer.get(phone)
 
 # ---------------------------------------------------------------------------
 # Chat logging
@@ -141,18 +235,32 @@ def handle_document(phone: str, msg: dict) -> str:
         if "pdf" in mime.lower() or filename.lower().endswith(".pdf"):
             if not PDF_OK:
                 return "📄 PDF support not available right now."
+            # Fast extraction — max 15 pages, stop early once we have enough text
             with pdfplumber.open(io.BytesIO(content)) as pdf:
-                pages = pdf.pages
-                page_count = len(pages)
-                text = "\n\n".join(
-                    f"[Page {i+1}]\n{(p.extract_text() or '').strip()}"
-                    for i, p in enumerate(pages) if p.extract_text()
-                )
+                page_count = len(pdf.pages)
+                max_pages  = min(page_count, 15)  # never read more than 15 pages
+                chunks = []
+                char_budget = 4000  # stop extracting once we have this much text
+                for i, p in enumerate(pdf.pages[:max_pages]):
+                    t = (p.extract_text() or "").strip()
+                    if t:
+                        chunks.append(f"[Page {i+1}]\n{t}")
+                    if sum(len(c) for c in chunks) >= char_budget:
+                        break
+            text = "\n\n".join(chunks)
             if not text.strip():
-                return f"📄 *{filename}* — I couldn't extract text. This might be a scanned PDF (image-only)."
-            # Pass content + filename + page count + caption so Claude can give brief intro
-            user_instruction = caption if caption else "Briefly describe what this document is (1 sentence) then ask the user what they want done with it. DO NOT summarize unless they ask."
-            parts = [{"type":"text","text":f"📄 PDF received: *{filename}* ({page_count} pages)\n\nContent preview:\n{text[:5000]}\n\n---\nUser instruction: {user_instruction}"}]
+                return f"📄 *{filename}* — couldn't extract text. It may be a scanned/image PDF."
+            # Buffer the original file bytes so we can upload to Drive on demand
+            store_doc(phone, filename, content, mime or "application/pdf", text, page_count)
+            user_instruction = caption if caption else (
+                "Owner sent a PDF. Show 4 button options for what to do — use send_button_menu with body "
+                f"\"📄 *{filename}* ({page_count} pages) — what would you like?\" "
+                "and buttons: '💾 Save to Drive', '📝 Summarize', '⚡ Key Actions'. "
+                "After they choose, do that action."
+            ) if is_owner(phone) else (
+                "User sent a PDF. Briefly say what it is in 1 line, then ask what they want done with it. Do NOT summarize unless they ask."
+            )
+            parts = [{"type":"text","text":f"📄 PDF received: *{filename}* ({page_count} pages, showing first {max_pages})\n\nContent preview:\n{text[:4000]}\n\n---\n{user_instruction}"}]
             return ask_claude(phone, parts)
         elif "image" in mime.lower():
             if mime_type not in ("image/jpeg","image/png","image/gif","image/webp"):
@@ -185,7 +293,7 @@ def handle_audio(phone: str, msg: dict) -> str:
         print(f"🎤 Transcribed: {transcribed}")
         log_chat(phone, "IN", f"[Voice] {transcribed}", "audio")
         reply = ask_claude(phone, [{"type":"text","text":f"[Voice note]: {transcribed}"}])
-        return f"🎤 _{transcribed}_\n\n{reply}"
+        return f"🎤 _{transcribed}_\n\n{wa_format(reply)}"
     except Exception as e:
         return f"❌ Couldn't transcribe: {e}"
 
@@ -236,16 +344,14 @@ TOOLS = [
     },
     {
         "name": "create_calendar_event",
-        "description": "Schedule a meeting or event on Google Calendar. Automatically creates a Google Meet link. Returns meet_link (share this with attendees) and event_link (calendar page).",
+        "description": "Schedule a meeting on Google Calendar and get a Google Meet link. Do NOT ask for attendees or emails — just book it and return the meet_link to share.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "title":         {"type":"string"},
-                "start_datetime":{"type":"string"},
-                "end_datetime":  {"type":"string"},
+                "start_datetime":{"type":"string","description":"Format: YYYY-MM-DDTHH:MM:SS (24hr, no timezone)"},
+                "end_datetime":  {"type":"string","description":"Format: YYYY-MM-DDTHH:MM:SS (24hr, no timezone)"},
                 "description":   {"type":"string","default":""},
-                "attendees":     {"type":"array","items":{"type":"string"},"default":[]},
-                "location":      {"type":"string","default":""},
             },
             "required": ["title","start_datetime","end_datetime"],
         },
@@ -256,6 +362,17 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {"max_results":{"type":"integer","default":10}},
+            "required": [],
+        },
+    },
+    {
+        "name": "save_document_to_drive",
+        "description": "Upload the most recently received document/PDF to the user's Google Drive (folder: 'WhatsApp Documents') and log it to the Documents sheet. Returns a shareable Drive link. Call this when the owner clicks 'Save to Drive' button or asks to save a document.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "notes": {"type":"string","default":"","description":"Optional short note about the document for the sheet log"},
+            },
             "required": [],
         },
     },
@@ -281,6 +398,30 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
         log_chat(phone, "OUT", f"🔘 {inp['body']}\n[{btn_labels}]", "button")
         return json.dumps({"success": True})
 
+    if name == "save_document_to_drive":
+        if not GOOGLE_OK:
+            return json.dumps({"success": False, "error": "Google Drive not configured"})
+        doc = get_doc(phone)
+        if not doc:
+            return json.dumps({"success": False, "error": "No recent document found in buffer (received >1hr ago or never sent)"})
+        try:
+            up = gs.upload_to_drive(doc["bytes"], doc["filename"], doc["mime"])
+            if not up.get("success"):
+                return json.dumps(up)
+            # Log to Documents sheet
+            try:
+                gs.append_document_to_sheet(
+                    filename=doc["filename"], drive_link=up["link"],
+                    doc_type="PDF" if "pdf" in doc["mime"].lower() else "File",
+                    pages=doc.get("pages", 0), notes=inp.get("notes",""),
+                    uploaded_by=phone,
+                )
+            except Exception as se:
+                print(f"⚠️ Doc sheet log failed (non-fatal): {se}")
+            return json.dumps({"success": True, "link": up["link"], "filename": doc["filename"]})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
     # Tasks — use Supabase if available, else Google Sheets
     if name in ("add_task","get_tasks","update_task_status"):
         svc = sb if SUPABASE_OK else (gs if GOOGLE_OK else None)
@@ -288,11 +429,27 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
             return json.dumps({"error":"No storage configured (need Supabase or Google)"})
         try:
             if name == "add_task":
-                return json.dumps(svc.add_task(
+                # Save to PRIMARY (Supabase if available, else Google)
+                primary_res = svc.add_task(
                     task_name=inp["task_name"], description=inp.get("description",""),
                     category=inp.get("category","General"), priority=inp.get("priority","🟡 Medium"),
                     due_date=inp.get("due_date",""), status=inp.get("status","📋 To Do"),
-                ))
+                )
+                # ALSO mirror to Google Sheets if both are enabled (so user can see in their sheet)
+                if SUPABASE_OK and GOOGLE_OK:
+                    try:
+                        sheet_res = gs.add_task(
+                            task_name=inp["task_name"], description=inp.get("description",""),
+                            category=inp.get("category","General"), priority=inp.get("priority","🟡 Medium"),
+                            due_date=inp.get("due_date",""), status=inp.get("status","📋 To Do"),
+                        )
+                        if not sheet_res.get("success"):
+                            print(f"⚠️ Tasks sheet mirror failed: {sheet_res.get('error')}")
+                        else:
+                            print(f"✅ Mirrored task to Tasks sheet")
+                    except Exception as me:
+                        print(f"⚠️ Tasks sheet mirror exception: {me}")
+                return json.dumps(primary_res)
             elif name == "get_tasks":
                 if SUPABASE_OK:
                     res = svc.get_tasks(status_filter=inp.get("status_filter",""), search=inp.get("search",""))
@@ -320,7 +477,14 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
                     res["period"] = period
                 return json.dumps(res)
             elif name == "update_task_status":
-                return json.dumps(svc.update_task_status(inp["task_id"], inp["new_status"]))
+                primary_res = svc.update_task_status(inp["task_id"], inp["new_status"])
+                # Mirror to sheets if both stores active
+                if SUPABASE_OK and GOOGLE_OK:
+                    try:
+                        gs.update_task_status(inp["task_id"], inp["new_status"])
+                    except Exception as me:
+                        print(f"⚠️ Tasks sheet mirror update failed: {me}")
+                return json.dumps(primary_res)
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -333,18 +497,29 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
             result = gs.create_calendar_event(
                 title=inp["title"], start_datetime=inp["start_datetime"],
                 end_datetime=inp["end_datetime"], description=inp.get("description",""),
-                attendees=inp.get("attendees") or [], location=inp.get("location",""),
+                attendees=[],   # never send invites or emails
+                location="",
             )
             print(f"📅 Calendar result: {result}")
             if result.get("success"):
                 try:
-                    gs.append_meeting_to_sheet(
+                    sheet_res = gs.append_meeting_to_sheet(
                         title=result["title"], start_datetime=result["start"],
-                        end_datetime=result["end"], attendees=", ".join(inp.get("attendees") or []),
-                        description=inp.get("description",""), event_link=result.get("event_link",""),
+                        end_datetime=result["end"],
+                        description=inp.get("description",""),
+                        event_link=result.get("event_link",""),
+                        meet_link=result.get("meet_link",""),
                     )
+                    if not sheet_res.get("success"):
+                        print(f"⚠️ Meetings sheet log failed: {sheet_res.get('error')}")
+                        result["sheet_warning"] = sheet_res.get("error")
+                    else:
+                        print(f"✅ Logged to Meetings sheet (row {sheet_res.get('meeting_num')})")
                 except Exception as se:
-                    print(f"⚠️ Sheet log failed (non-fatal): {se}")
+                    import traceback
+                    print(f"⚠️ Meetings sheet log exception:")
+                    print(traceback.format_exc())
+                    result["sheet_warning"] = str(se)
             return json.dumps(result)
         elif name == "list_calendar_events":
             return json.dumps(gs.list_calendar_events(max_results=inp.get("max_results",10)))
@@ -357,66 +532,202 @@ def execute_tool(name: str, inp: dict[str, Any], phone: str) -> str:
     return json.dumps({"error": f"Unknown tool: {name}"})
 
 # ---------------------------------------------------------------------------
-# System prompt
+# System prompts — Owner vs Client
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = f"""You are *Muhammad Daud Zia's Personal Assistant* on WhatsApp. Today: {datetime.utcnow().strftime('%A, %d %B %Y')}.
+_TODAY = datetime.now().strftime("%A, %d %B %Y")
 
-LANGUAGE: Reply in the SAME language the user writes (English, Urdu, Roman Urdu, Hinglish, etc). Detect each message individually.
+# OWNER PROMPT — full access, this is Daud himself
+OWNER_SYSTEM_PROMPT = f"""You are Muhammad Daud Zia's personal AI assistant on WhatsApp. Today: {_TODAY}. Timezone: Pakistan Standard Time (PKT, UTC+5).
+
+PERSONALITY: Warm, friendly, professional — like a trusted human assistant who knows Daud well. Use natural conversational language, not curt one-word replies. Be polite and helpful, never blunt or robotic. Match his energy — if he writes casually, reply casually but warmly.
+
+LANGUAGE: Match whatever Daud writes — English, Urdu, Roman Urdu, Hinglish. Detect per message.
+
+TONE EXAMPLES:
+✅ Good: "Sure! Who is the call with?" "Got it — booking now." "Done! Your meeting with Amjad is set for tomorrow at 8 PM PKT."
+❌ Bad:  "What do you need?" "Who's the call with?" "Done." "What's next?"
 
 CORE RULES:
-1. Be DIRECT — execute requests, don't ask permission. "show tasks" → call get_tasks immediately.
-2. NO repeated button menus. Buttons only on first contact OR when truly ambiguous.
-3. Don't say "I'll do X" — just do it and confirm.
-4. Keep replies SHORT (3-6 lines max). Long replies only when explaining things in detail.
-5. Use clean formatting — single blank line between sections, no excessive emojis.
+1. Execute immediately — "show tasks" → call get_tasks right away. But still phrase it warmly: "Here are your tasks for today..." not just dump data.
+2. Replies should feel human — 2-6 lines, conversational, not robotic.
+3. NEVER use empty/single-emoji replies (no standalone ✅, ✔️, 👍 messages). If you call send_button_menu, ALSO include a friendly intro text in the body — don't send empty followups.
+4. Confirm done tasks warmly — "Added! ✅ Get gym membership is on your list for tomorrow at 5 PM."
+5. If something fails, explain plainly and offer to retry.
+6. ALWAYS confirm timezone is Pakistan Time (PKT) for meetings.
 
-DOCUMENT/IMAGE HANDLING:
-- When you receive an image or document, FIRST briefly say what it is (1 line), then ASK what they want done with it (summarize, extract key points, translate, answer questions, etc).
-- Example: "Got it — *O1-FFA.pdf* (Financial Accounting study material, 3 pages). What would you like? Summary, key concepts, or specific topic explanation?"
-- Wait for user's instruction. DON'T auto-summarize unless they say so.
-- If they previously sent the same document, DON'T re-summarize — answer their new question using context.
+BUTTONS — use send_button_menu tool when:
+• Greeting/first message → body: "Hi Daud! 👋 What can I help you with today?", buttons: "📋 Tasks", "📅 Calendar", "➕ Add Task"
+• When offering 2-3 clear next-step options
+The body text must be friendly and complete — not just "Pick one". Max 3 buttons, 20 chars each.
 
 TASK QUERIES:
 - "today/daily" → get_tasks(period="today")
-- "this week/weekly" → get_tasks(period="week")
-- "this month/monthly" → get_tasks(period="month")
+- "this week" → get_tasks(period="week")
+- "this month" → get_tasks(period="month")
 - "overdue" → get_tasks(period="overdue")
-- "all" → get_tasks() with no filter
+- "all tasks" → get_tasks() no filter
 
-TASK LIST FORMAT (clean, no extra spacing):
-*Today's Tasks (3)*
-
-🔴 *Client meeting prep*
-   Due today · 📋 To Do
-
-🟡 *Review proposal*
-   Due today · 🔄 In Progress
-
-Stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done
+TASK LIST FORMAT:
+*Today Tasks (3)*
+🔴 *Client meeting prep* · To Do
+🟡 *Review proposal* · In Progress
+🟢 *Send invoice* · Done
 Priority: 🔴 High · 🟡 Medium · 🟢 Low
+Stages: 📋 To Do → 🔄 In Progress → 👀 Review → ✅ Done
 
-CALENDAR / MEETINGS:
-- For booking: check list_calendar_events for conflicts → suggest 2-3 slots → after confirmation call create_calendar_event
-- ALWAYS share `meet_link` (Google Meet), NOT `event_link`
-- Format after booking:
-  📅 *Meeting booked*
-  🕐 Tomorrow, 27 April · 2:00 PM
-  👥 Daud + you
-  🔗 https://meet.google.com/abc-defg-hij
+CALENDAR BOOKING FLOW:
+Collect these ONE AT A TIME (not all at once):
 
-- If `meet_link` is empty (calendar error), say: "Meeting saved. I'll send the Meet link separately."
-- Never invent meet links.
+STEP 1 — Who: "Sure! Who is the call with?"
+STEP 2 — Title/topic (if not given): "What is the meeting about?"
+STEP 3 — Date/time (if not given): "What time works for you?"
+STEP 4 — Duration: USE send_button_menu tool here!
+   body: "How long should the meeting be?"
+   buttons: "⏱️ 30 minutes", "🕐 1 hour"
 
-OUTGOING IDENTITY:
-- You are Daud's assistant. When clients/visitors message, introduce: "Hi! I'm Daud's assistant — how can I help?"
-- Schedule on his behalf using calendar tools. Confirm everything before booking.
+If Daud already provides info upfront (e.g. "book 1hr call with Ahmad tomorrow 6pm about crypto"), do not ask again — just confirm and book directly.
+
+NEVER ask for email or attendees. ALL times are Pakistan Standard Time (PKT, UTC+5).
+
+Call create_calendar_event with EXACT format:
+- title: "[topic] - [name]" (e.g. "Project review - Ahmad")
+- start_datetime: PASS USER TIME EXACTLY AS STATED (already in PKT). Do NOT convert to UTC. Do NOT add/subtract hours.
+  Format: "YYYY-MM-DDTHH:MM:SS" in 24-hour, NO timezone suffix.
+  If Daud says "11 AM" → pass "YYYY-MM-DDT11:00:00" (NOT 06:00:00).
+  If Daud says "6 PM" → pass "YYYY-MM-DDT18:00:00" (NOT 13:00:00).
+- end_datetime: start + chosen duration:
+  → 30 min: "11:00:00" → "11:30:00"
+  → 1 hour: "11:00:00" → "12:00:00"
+- Today is {_TODAY}. Calculate correct date from "tomorrow", "Monday", etc.
+- Google receives Asia/Karachi timezone automatically — your job is just to pass HH:MM as the user said.
+
+SUCCESS — reply with this PROFESSIONAL FORMAT:
+
+📅 *Meeting Confirmed!*
+
+👤 *With:* [name]
+📌 *Topic:* [title]
+📆 *Date:* [Day, DD Month] (e.g., Tuesday, 28 April)
+🕐 *Time:* [time] PKT (e.g., 8:00 PM PKT)
+⏱️ *Duration:* [30 minutes / 1 hour]
+
+🔗 *Join Meeting:* [meet_link]
+
+_See you there! 👋_
+
+SUCCESS but meet_link empty: same format with "_Meet link will generate shortly._"
+FAILURE: share the EXACT error message from create_calendar_event response.
+DO NOT say "technical issue", "glitching", "connection issue", or "will be restored" — those are LIES.
+DO NOT offer to add as a task instead — just tell Daud what failed.
+Format: "Couldn't book the meeting. Error: <paste literal error from tool response>"
+NEVER invent meet links.
+NEVER claim the calendar is broken when you don't know — share the actual error so Daud can debug.
+
+DOCUMENT/PDF HANDLING (owner only):
+When Daud sends a PDF, ALWAYS use send_button_menu first with these 3 action buttons:
+  body: "📄 *<filename>* (<N> pages) — what would you like?"
+  buttons: "💾 Save to Drive", "📝 Summarize", "⚡ Key Actions"
+
+Then act on his choice:
+- "💾 Save to Drive" or any save request → call save_document_to_drive tool. After success, reply:
+  "✅ Saved to Drive!
+
+📄 *[filename]*
+🔗 [drive_link]
+
+_Logged in your Documents sheet._"
+- "📝 Summarize" → write a clean 4-6 line summary in WhatsApp format with bullets
+- "⚡ Key Actions" → list 3-5 actionable items extracted from the PDF (use bullets)
+- Any free-text question about the PDF → answer using PDF context
+
+IMAGES: Briefly describe in 1 line, ask what to do. Do not auto-analyze.
 
 DON'T:
-- Apologize repeatedly
-- Use phrases like "calendar mein issue hai" — just say "let me try again" and retry
-- Send the same response twice
+- Say "What is next?" or "Anything else?" or "How can I help further?" — just stop after confirming.
+- Apologize more than once for the same thing
 - Use more than 3 emojis per message
 - Add unnecessary line breaks"""
+
+# CLIENT PROMPT — restricted, for clients/customers/team members
+CLIENT_SYSTEM_PROMPT = f"""You are the professional AI assistant for Muhammad Daud Zia — a business manager. Today: {_TODAY}.
+
+YOUR ROLE: You represent Daud to his clients, customers, and team members. You help with:
+- Booking a call or meeting with Daud
+- Questions about Daud or his services
+- General conversation and assistance
+
+YOU CANNOT: Access Daud's personal tasks, private notes, or internal business data. If asked, politely decline.
+
+PERSONALITY: Professional, warm, human. Like a real receptionist. Natural conversation — not robotic. Never say "What is next?" or "How can I assist you further?"
+
+LANGUAGE: Match what the person writes — English, Urdu, Roman Urdu, etc.
+
+GREETING (hi/hello/salam/hey): Warmly introduce yourself and offer buttons.
+Use send_button_menu with: body="Hi! 👋 I am Daud's assistant. How can I help you today?", buttons: "📅 Book a Meeting", "ℹ️ Learn More", "💬 Send a Message"
+
+MEETING BOOKING (warm, professional, step-by-step flow):
+Collect these 4 things ONE AT A TIME (do not ask all at once):
+
+STEP 1 — Name (if not already given):
+"May I have your name, please? 🙏"
+
+STEP 2 — Meeting topic/title:
+"What is the meeting about? (e.g., Project discussion, Crypto consultation)"
+
+STEP 3 — Preferred date and time:
+"What date and time works best for you? (Pakistan time / PKT)"
+
+STEP 4 — Duration: USE send_button_menu tool here!
+body: "How long should the meeting be?"
+buttons: "⏱️ 30 minutes", "🕐 1 hour"
+
+Once you have all 4 → call create_calendar_event:
+- title: use the meeting topic + name (e.g. "Crypto consultation - Ahmad")
+- start_datetime: "2025-04-28T14:00:00" (YYYY-MM-DDTHH:MM:SS, 24-hour, no timezone)
+- end_datetime: start + 30min OR start + 1hr based on duration choice
+  → 30 min: 14:00 → 14:30
+  → 1 hour: 14:00 → 15:00
+- Today is {_TODAY}. PKT timezone. Never ask for email.
+
+After booking — reply with this PROFESSIONAL FORMAT:
+
+📅 *Meeting Confirmed with Daud!*
+
+👤 *Booked By:* [name]
+📌 *Topic:* [title]
+📆 *Date:* [Day, DD Month]
+🕐 *Time:* [time] PKT
+⏱️ *Duration:* [30 minutes / 1 hour]
+
+🔗 *Join Google Meet:* [meet_link]
+
+_Looking forward to speaking with you! 🙏_
+
+If meet_link empty: replace link line with "_Meet link will be ready shortly._"
+NEVER ask for email addresses. NEVER ask everything at once — go step by step.
+
+IF ASKED ABOUT TASKS/PRIVATE INFO: "That is Daud's private workspace — I do not have access to that. Can I help you book a meeting instead?"
+
+KEEP IT: Short, friendly, human, professional."""
+
+def get_system_prompt(phone: str) -> str:
+    return OWNER_SYSTEM_PROMPT if is_owner(phone) else CLIENT_SYSTEM_PROMPT
+# ---------------------------------------------------------------------------
+# WhatsApp formatting helpers
+# ---------------------------------------------------------------------------
+def wa_format(text: str) -> str:
+    """Convert standard markdown to WhatsApp-safe formatting."""
+    if not text: return text
+    # **bold** or __bold__ → *bold*
+    text = re.sub(r'\*\*(.+?)\*\*', r'*\1*', text, flags=re.DOTALL)
+    text = re.sub(r'__(.+?)__',     r'_\1_', text, flags=re.DOTALL)
+    # ### Heading → *Heading*
+    text = re.sub(r'(?m)^#{1,6}\s+(.+)$', r'*\1*', text)
+    # Normalize bullet points
+    text = re.sub(r'(?m)^\s*[-–•]\s+', '• ', text)
+    # Collapse 3+ blank lines to 2
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
 
 # ---------------------------------------------------------------------------
 # Claude agent loop
@@ -425,6 +736,26 @@ def _block_type(b):
     """Get block type whether it's a dict or anthropic object."""
     if isinstance(b, dict): return b.get("type")
     return getattr(b, "type", None)
+
+def _serialize_content(content) -> list:
+    """Convert Anthropic SDK content blocks to plain JSON-serializable dicts."""
+    result = []
+    for block in (content if isinstance(content, list) else []):
+        if isinstance(block, dict):
+            result.append(block)
+        elif hasattr(block, "type"):
+            t = block.type
+            if t == "text":
+                result.append({"type": "text", "text": block.text})
+            elif t == "tool_use":
+                result.append({"type": "tool_use", "id": block.id, "name": block.name, "input": block.input})
+            elif t == "tool_result":
+                result.append({"type": "tool_result", "tool_use_id": block.tool_use_id, "content": block.content})
+            else:
+                result.append({"type": t})
+        else:
+            result.append({"type": "text", "text": str(block)})
+    return result
 
 def sanitize_history(history: list) -> list:
     """Drop any assistant message with tool_use that doesn't have a matching tool_result next.
@@ -477,6 +808,11 @@ def safe_trim(history: list, max_msgs: int = 20) -> list:
     return trimmed
 
 def ask_claude(phone: str, content: list) -> str:
+    # Owner gets all tools; clients only get calendar + button tools (NOT Drive — that's private)
+    owner = is_owner(phone)
+    active_tools = TOOLS if owner else [t for t in TOOLS if t["name"] in ("create_calendar_event", "list_calendar_events", "send_button_menu")]
+    system = get_system_prompt(phone)
+
     history = load_history(phone)
     history = sanitize_history(history)
     history.append({"role": "user", "content": content})
@@ -484,10 +820,10 @@ def ask_claude(phone: str, content: list) -> str:
     while True:
         try:
             response = claude.messages.create(
-                model="claude-opus-4-5",
+                model="claude-haiku-4-5",
                 max_tokens=1024,
-                system=SYSTEM_PROMPT,
-                tools=TOOLS,
+                system=system,
+                tools=active_tools,
                 messages=safe_trim(history, 20),
             )
         except anthropic.BadRequestError as e:
@@ -497,10 +833,10 @@ def ask_claude(phone: str, content: list) -> str:
             _mem_cache[phone] = []
             if SUPABASE_OK: sb.save_conversation(phone, [])
             response = claude.messages.create(
-                model="claude-opus-4-5",
+                model="claude-haiku-4-5",
                 max_tokens=1024,
-                system=SYSTEM_PROMPT,
-                tools=TOOLS,
+                system=system,
+                tools=active_tools,
                 messages=history,
             )
         text, tool_calls = "", []
@@ -508,11 +844,11 @@ def ask_claude(phone: str, content: list) -> str:
             if block.type == "text":       text += block.text
             elif block.type == "tool_use": tool_calls.append(block)
 
-        history.append({"role": "assistant", "content": response.content})
+        history.append({"role": "assistant", "content": _serialize_content(response.content)})
 
         if response.stop_reason == "end_turn" or not tool_calls:
             save_history(phone, history)
-            return text.strip() or "✅"
+            return wa_format(text)  # may be empty — caller will skip sending
 
         tool_results = []
         for tool in tool_calls:
@@ -625,7 +961,8 @@ def process_message_async(msg: dict, from_num: str, msg_type: str):
         else:
             reply = f"I received your {msg_type}. How can I help?"
 
-        if reply:
+        # Only send if there is real text — buttons/menus are sent directly via send_button_menu
+        if reply and reply.strip() and reply.strip() not in ("✅", "✔️", "👍"):
             send_text(from_num, reply)
             log_chat(from_num,"OUT",reply,"text")
     except Exception as e:
