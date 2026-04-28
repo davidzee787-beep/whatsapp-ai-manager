@@ -295,7 +295,7 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_KEY=eyJxxx...
 
 # Daily reminder (your WhatsApp number with country code, no +)
-REMINDER_PHONE=923191413828
+REMINDER_PHONE=92*********8
 ```
 
 ---
@@ -382,7 +382,7 @@ When delivering this bot to a new client, change these things:
 ### 🔧 1. Owner Phone Number
 **File:** `whatsapp_agent.py` line ~31
 ```python
-OWNER_PHONES = {"923191413828", "3191413828", "03191413828"}  # all formats
+OWNER_PHONES = {"92*********8", "3*****3828", "03******828"}  # all formats
 ```
 Replace with the client's WhatsApp number in all 3 formats (with/without country code, with/without leading 0).
 
